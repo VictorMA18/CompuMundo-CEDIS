@@ -10,7 +10,9 @@ export class UsuariosService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: CreateUsuarioDto): Promise<IUsuario> {
-    const exists = await this.prisma.tB_USUARIO.findUnique({ where: { UsuEma: data.UsuEma } });
+    const exists = await this.prisma.tB_USUARIO.findUnique({
+      where: { UsuEma: data.UsuEma },
+    });
     if (exists) throw new BadRequestException('El email ya está registrado');
 
     const hashed = await bcrypt.hash(data.UsuCon, 10);
@@ -28,15 +30,29 @@ export class UsuariosService {
   async findAll(): Promise<IUsuario[]> {
     return this.prisma.tB_USUARIO.findMany({
       select: {
-        UsuId: true, UsuNom: true, UsuEma: true, UsuTip: true, UsuFecCre: true, UsuFecAct: true, UsuAct: true
-      }
+        UsuId: true,
+        UsuNom: true,
+        UsuEma: true,
+        UsuTip: true,
+        UsuFecCre: true,
+        UsuFecAct: true,
+        UsuAct: true,
+      },
     });
   }
 
   async findOne(id: number): Promise<IUsuario | null> {
     return this.prisma.tB_USUARIO.findUnique({
       where: { UsuId: id },
-      select: { UsuId: true, UsuNom: true, UsuEma: true, UsuTip: true, UsuFecCre: true, UsuFecAct: true, UsuAct: true }
+      select: {
+        UsuId: true,
+        UsuNom: true,
+        UsuEma: true,
+        UsuTip: true,
+        UsuFecCre: true,
+        UsuFecAct: true,
+        UsuAct: true,
+      },
     });
   }
 
@@ -45,8 +61,22 @@ export class UsuariosService {
   }
 
   async update(id: number, data: UpdateUsuarioDto): Promise<IUsuario> {
-    // si se actualiza contraseña deberías hashearla aquí también
-    return this.prisma.tB_USUARIO.update({ where: { UsuId: id }, data });
+    if (data.UsuCon) {
+      data.UsuCon = await bcrypt.hash(data.UsuCon, 10);
+    }
+    return this.prisma.tB_USUARIO.update({
+      where: { UsuId: id },
+      data,
+      select: {
+        UsuId: true,
+        UsuNom: true,
+        UsuEma: true,
+        UsuTip: true,
+        UsuFecCre: true,
+        UsuFecAct: true,
+        UsuAct: true,
+      },
+    });
   }
 
   async remove(id: number): Promise<IUsuario> {
