@@ -7,6 +7,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import type { StringValue } from 'ms';
 
 @Module({
   imports: [
@@ -19,8 +20,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: config.get<number>('JWT_EXPIRES_IN') || '600s',
-        },
+          expiresIn: config.get<StringValue>('JWT_EXPIRES_IN') || '10m',
+        }
       }),
     }),
   ],
