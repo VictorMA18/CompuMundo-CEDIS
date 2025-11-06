@@ -1,14 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { LectoresService } from './lectores.service';
-import { CreateLectoreDto } from './dto/create-lectore.dto';
-import { UpdateLectoreDto } from './dto/update-lectore.dto';
+import { CreateLectorDto } from './dto/create-lector.dto';
+import { UpdateLectoreDto } from './dto/update-lector.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('lectores')
 export class LectoresController {
   constructor(private readonly lectoresService: LectoresService) {}
 
+  @Roles("administrador", "bibliotecario")
   @Post()
-  create(@Body() createLectoreDto: CreateLectoreDto) {
+  create(@Body() createLectoreDto: CreateLectorDto) {
     return this.lectoresService.create(createLectoreDto);
   }
 
@@ -22,11 +27,13 @@ export class LectoresController {
     return this.lectoresService.findOne(+id);
   }
 
+  @Roles("administrador", "bibliotecario")
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateLectoreDto: UpdateLectoreDto) {
     return this.lectoresService.update(+id, updateLectoreDto);
   }
 
+  @Roles("administrador", "bibliotecario")
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.lectoresService.remove(+id);
