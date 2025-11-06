@@ -23,3 +23,15 @@ model TB_USUARIO {
   UsuFecAct DateTime @default(now()) @updatedAt
   UsuAct    Boolean  @default(true)
 }
+
+model TB_LECTOR {
+  LecId     Int      @id @default(autoincrement())
+  LecDni    String   @unique @db.VarChar(8)
+  LecNom    String   @db.VarChar(100)
+  LecApe    String   @db.VarChar(100)
+  LecTip    String   @db.VarChar(20)
+  LecEma    String?  @db.VarChar(100)
+  LecFecCre DateTime @default(now())
+  LecFecAct DateTime @default(now()) @updatedAt
+  LecAct    Boolean  @default(true)
+}
