@@ -35,3 +35,12 @@ model TB_LECTOR {
   LecFecAct DateTime @default(now()) @updatedAt
   LecAct    Boolean  @default(true)
 }
+
+model TB_CATEGORIA {
+  CatId     Int      @id @default(autoincrement())
+  CatNom    String   @unique @db.VarChar(100)
+  CatDes    String?  @db.Text
+  CatFecCre DateTime @default(now())
+  CatFecAct DateTime @default(now()) @updatedAt
+  CatAct    Boolean  @default(true)
+}

@@ -24,6 +24,26 @@ async function main() {
   } else {
     console.log('El usuario administrador ya existe');
   }
+
+  // Categorías base
+  const categorias = [
+    { CatNom: 'Libro', CatDes: 'Material bibliográfico de lectura extensa' },
+    { CatNom: 'Artículo', CatDes: 'Documento breve de carácter informativo o científico' },
+    { CatNom: 'Tesis', CatDes: 'Trabajo académico de investigación' },
+  ];
+  
+  for (const cat of categorias) {
+    await prisma.tB_CATEGORIA.upsert({ // Usamos upsert para evitar duplicados. Si la categoría ya existe por nombre, no la crea de nuevo (update vacío). Si no existe, la crea.
+      where: { CatNom: cat.CatNom },
+      update: {},
+      create: {
+        CatNom: cat.CatNom,
+        CatDes: cat.CatDes,
+        CatAct: true,
+      },
+    });
+  }
+  console.log('Categorías base insertadas');
 }
 
 main()
