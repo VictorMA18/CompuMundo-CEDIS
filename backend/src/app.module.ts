@@ -7,6 +7,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { LectoresModule } from './lectores/lectores.module';
+import { CategoriasModule } from './categorias/categorias.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { LectoresModule } from './lectores/lectores.module';
     UsuariosModule,
     AuthModule,
     LectoresModule,
+    CategoriasModule,
   ],
   controllers: [AppController],
   providers: [AppService],
