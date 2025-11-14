@@ -8,6 +8,9 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { LectoresModule } from './lectores/lectores.module';
 import { CategoriasModule } from './categorias/categorias.module';
+import { MaterialBibliograficoModule } from './material-bibliografico/material-bibliografico.module';
+import { AutorModule } from './autor/autor.module';
+import { AutorMaterialModule } from './autor-material/autor-material.module';
 
 @Module({
   imports: [
@@ -18,6 +21,9 @@ import { CategoriasModule } from './categorias/categorias.module';
     AuthModule,
     LectoresModule,
     CategoriasModule,
+    MaterialBibliograficoModule,
+    AutorModule,
+    AutorMaterialModule,
   ],
   controllers: [AppController],
   providers: [AppService],

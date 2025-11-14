@@ -7,8 +7,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
-    const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
-    const message = exception instanceof HttpException ? exception.getResponse() : exception;
+
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message: any = exception;
+
+    // Personalizando el mensaje para capturar errores de Prisma
+    if (exception && exception.constructor && exception.constructor.name === 'PrismaClientValidationError') {
+      status = HttpStatus.BAD_REQUEST;
+      message = (exception as any).message || 'Error de validación en la base de datos.';
+    } else if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      message = exception.getResponse();
+    }
 
     response.status(status).json({
       statusCode: status,
