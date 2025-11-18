@@ -65,8 +65,8 @@ export class MaterialBibliograficoService {
         MatBibCod: createMaterialBibliograficoDto.MatBibCod,
         MatBibTit: createMaterialBibliograficoDto.MatBibTit,
         MatBibAno: esAnonimo,
+        MatBibFor: 'NINGUNO',
         CatId: createMaterialBibliograficoDto.CatId,
-        MatBibFor: createMaterialBibliograficoDto.MatBibFor,
         MatBibFecPub: createMaterialBibliograficoDto.MatBibFecPub,
       },
       select: materialSelect,
@@ -92,43 +92,135 @@ export class MaterialBibliograficoService {
     return this.withAutores(material);
   }
 
-  async findAll(): Promise<IMaterialBibliografico[]> {
+  async recalcularFormato(materialId: number) {
+    const tieneFisico = await this.prisma.tB_MATERIAL_FISICO.findFirst({
+      where: { MatBibId: materialId, MatFisAct: true },
+    });
+    const tieneVirtual = await this.prisma.tB_MATERIAL_VIRTUAL.findFirst({
+      where: { MatBibId: materialId, MatVirAct: true },
+    });
+
+    let formato: 'FISICO' | 'VIRTUAL' | 'MIXTO' | 'NINGUNO';
+    if (tieneFisico && tieneVirtual) formato = 'MIXTO';
+    else if (tieneFisico) formato = 'FISICO';
+    else if (tieneVirtual) formato = 'VIRTUAL';
+    else formato = 'NINGUNO';
+
+    await this.prisma.tB_MATERIAL_BIBLIOGRAFICO.update({
+      where: { MatBibId: materialId },
+      data: { MatBibFor: formato },
+    });
+  }
+
+  async findAll(): Promise<any[]> {
     const materiales = await this.prisma.tB_MATERIAL_BIBLIOGRAFICO.findMany({
+      where: { MatBibAct: true },
       select: {
         ...materialSelect,
         autoresMaterial: {
           where: { AutMatAct: true },
-          select: { autor: true },
+          select: {
+            autor: {
+              select: {
+                AutId: true,
+                AutNom: true,
+                AutApe: true,
+                AutDoc: true,
+              },
+            },
+          },
+        },
+        materialesFisicos: {
+          where: { MatFisAct: true },
+          select: { MatFisCodEje: true,MatFisEst: true },
+        },
+        materialVirtual: {
+          where: { MatVirAct: true },
+          select: { MatVirId: true },
         },
       },
     });
 
-    return materiales;
+    return materiales.map(material => {
+      const totalFisicos = material.materialesFisicos.length;
+      const disponiblesFisicos = material.materialesFisicos.filter(f => f.MatFisEst === 'disponible').length;
+      const tieneVirtual = !!material.materialVirtual;
+      return {
+        ...material,
+        totalFisicos,
+        disponiblesFisicos,
+        tieneVirtual,
+      };
+    });
   }
 
-  async findAllDesactivados(): Promise<IMaterialBibliografico[]> {
+  async findAllDesactivados(): Promise<any[]> {
     const materiales = await this.prisma.tB_MATERIAL_BIBLIOGRAFICO.findMany({
       where: { MatBibAct: false },
       select: {
         ...materialSelect,
         autoresMaterial: {
           where: { AutMatAct: true },
-          select: { autor: true },
+          select: {
+            autor: {
+              select: {
+                AutId: true,
+                AutNom: true,
+                AutApe: true,
+                AutDoc: true,
+              },
+            },
+          },
+        },
+        materialesFisicos: {
+          where: { MatFisAct: true },
+          select: { MatFisEst: true },
+        },
+        materialVirtual: {
+          where: { MatVirAct: true },
+          select: { MatVirId: true },
         },
       },
     });
 
-    return materiales;
+    return materiales.map(material => {
+      const totalFisicos = material.materialesFisicos.length;
+      const disponiblesFisicos = material.materialesFisicos.filter(f => f.MatFisEst === 'disponible').length;
+      const tieneVirtual = !!material.materialVirtual;
+      return {
+        ...material,
+        totalFisicos,
+        disponiblesFisicos,
+        tieneVirtual,
+      };
+    });
   }
 
-  async findOne(id: number): Promise<IMaterialBibliografico> {
+  async findOne(id: number): Promise<any> {
     const material = await this.prisma.tB_MATERIAL_BIBLIOGRAFICO.findUnique({
       where: { MatBibId: id },
       select: {
         ...materialSelect,
         autoresMaterial: {
           where: { AutMatAct: true },
-          select: { autor: true },
+          select: {
+            autor: {
+              select: {
+                AutId: true,
+                AutNom: true,
+                AutApe: true,
+                AutDoc: true,
+              },
+            },
+          },
+        },
+        materialesFisicos: {
+          where: { MatFisAct: true },
+          select: { MatFisEst: true },
+        },
+        materialVirtual: {
+          where: { MatVirAct: true },
+          select: { MatVirId: true },
         },
       },
     });
@@ -137,7 +229,16 @@ export class MaterialBibliograficoService {
     if (!material.MatBibAct)
       throw new BadRequestException('El material bibliográfico está desactivado');
 
-    return material;
+    const totalFisicos = material.materialesFisicos.length;
+    const disponiblesFisicos = material.materialesFisicos.filter(f => f.MatFisEst === 'disponible').length;
+    const tieneVirtual = !!material.materialVirtual;
+
+    return {
+      ...material,
+      totalFisicos,
+      disponiblesFisicos,
+      tieneVirtual,
+    };
   }
 
   async update(
@@ -220,6 +321,9 @@ export class MaterialBibliograficoService {
       data: updateMaterialBibliograficoDto,
       select: materialSelect,
     });
+
+    // Recalcular el formato después de actualizar
+    await this.recalcularFormato(id);
 
     return this.withAutores(updatedMaterial);
   }
