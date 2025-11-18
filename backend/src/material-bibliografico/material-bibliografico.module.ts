@@ -9,5 +9,6 @@ import { AutorMaterialModule } from 'src/autor-material/autor-material.module';
   imports: [PrismaModule, AutorMaterialModule],
   controllers: [MaterialBibliograficoController],
   providers: [MaterialBibliograficoService],
+  exports: [MaterialBibliograficoService]
 })
 export class MaterialBibliograficoModule {}
