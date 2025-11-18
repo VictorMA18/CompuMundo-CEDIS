@@ -11,6 +11,8 @@ import { CategoriasModule } from './categorias/categorias.module';
 import { MaterialBibliograficoModule } from './material-bibliografico/material-bibliografico.module';
 import { AutorModule } from './autor/autor.module';
 import { AutorMaterialModule } from './autor-material/autor-material.module';
+import { MaterialFisicoModule } from './material-fisico/material-fisico.module';
+import { MaterialVirtualModule } from './material-virtual/material-virtual.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { AutorMaterialModule } from './autor-material/autor-material.module';
     MaterialBibliograficoModule,
     AutorModule,
     AutorMaterialModule,
+    MaterialFisicoModule,
+    MaterialVirtualModule,
   ],
   controllers: [AppController],
   providers: [AppService],
