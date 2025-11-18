@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,137 +8,141 @@ datasource db {
 }
 
 model TB_USUARIO {
-  UsuId     Int      @id @default(autoincrement())
-  UsuNom    String   @db.VarChar(100)
-  UsuEma    String   @unique @db.VarChar(100)
-  UsuCon    String   @db.VarChar(255)
-  UsuTip    String   @db.VarChar(20)
-  UsuFecCre DateTime @default(now())
-  UsuFecAct DateTime @default(now()) @updatedAt
-  UsuAct    Boolean  @default(true)
+  UsuId     Int           @id @default(autoincrement())
+  UsuNom    String        @db.VarChar(100)
+  UsuEma    String        @unique @db.VarChar(100)
+  UsuCon    String        @db.VarChar(255)
+  UsuTip    String        @db.VarChar(20)
+  UsuFecCre DateTime      @default(now())
+  UsuFecAct DateTime      @default(now()) @updatedAt
+  UsuAct    Boolean       @default(true)
   prestamos TB_PRESTAMO[]
 }
 
 model TB_LECTOR {
-  LecId     Int      @id @default(autoincrement())
-  LecDni    String   @unique @db.VarChar(8)
-  LecNom    String   @db.VarChar(100)
-  LecApe    String   @db.VarChar(100)
-  LecTip    String   @db.VarChar(20)
-  LecEma    String?  @db.VarChar(100) @unique
-  LecFecCre DateTime @default(now())
-  LecFecAct DateTime @default(now()) @updatedAt
-  LecAct    Boolean  @default(true)
+  LecId     Int           @id @default(autoincrement())
+  LecDni    String        @unique @db.VarChar(8)
+  LecNom    String        @db.VarChar(100)
+  LecApe    String        @db.VarChar(100)
+  LecTip    String        @db.VarChar(20)
+  LecEma    String?       @unique @db.VarChar(100)
+  LecFecCre DateTime      @default(now())
+  LecFecAct DateTime      @default(now()) @updatedAt
+  LecAct    Boolean       @default(true)
   prestamos TB_PRESTAMO[]
 }
 
 model TB_CATEGORIA {
-  CatId     Int      @id @default(autoincrement())
-  CatNom    String   @unique @db.VarChar(100)
-  CatDes    String?  @db.Text
-  CatFecCre DateTime @default(now())
-  CatFecAct DateTime @default(now()) @updatedAt
-  CatAct    Boolean  @default(true)
+  CatId      Int                         @id @default(autoincrement())
+  CatNom     String                      @unique @db.VarChar(100)
+  CatDes     String?
+  CatFecCre  DateTime                    @default(now())
+  CatFecAct  DateTime                    @default(now()) @updatedAt
+  CatAct     Boolean                     @default(true)
   materiales TB_MATERIAL_BIBLIOGRAFICO[]
 }
 
 model TB_MATERIAL_BIBLIOGRAFICO {
-  MatBibId           Int                   @id @default(autoincrement())
-  MatBibCod          String                @unique @db.VarChar(50)
-  MatBibTit          String                @db.VarChar(200)
-  MatBibAno          Boolean               @default(false)
-  CatId              Int
-  categoria          TB_CATEGORIA          @relation(fields: [CatId], references: [CatId])
-  MatBibFor          FormatoMaterial
-  MatBibFecPub       DateTime?             @db.Date
-  MatBibFecCre       DateTime              @default(now())
-  MatBibFecAct       DateTime              @default(now()) @updatedAt
-  MatBibAct          Boolean               @default(true)
-  materialesFisicos  TB_MATERIAL_FISICO[]
-  materialVirtual    TB_MATERIAL_VIRTUAL?
-  autoresMaterial    TB_AUTOR_MATERIAL[]
-  prestamosDetalle TB_PRESTAMO_DETALLE[]
+  MatBibId          Int                   @id @default(autoincrement())
+  MatBibCod         String                @unique @db.VarChar(50)
+  MatBibTit         String                @db.VarChar(200)
+  CatId             Int
+  MatBibFor         FormatoMaterial       @default(NINGUNO)      
+  MatBibFecPub      DateTime?             @db.Date
+  MatBibFecCre      DateTime              @default(now())
+  MatBibFecAct      DateTime              @default(now()) @updatedAt
+  MatBibAct         Boolean               @default(true)
+  MatBibAno         Boolean               @default(false)
+  autoresMaterial   TB_AUTOR_MATERIAL[]
+  categoria         TB_CATEGORIA          @relation(fields: [CatId], references: [CatId])
+  materialesFisicos TB_MATERIAL_FISICO[]
+  materialVirtual   TB_MATERIAL_VIRTUAL?
+  prestamosDetalle  TB_PRESTAMO_DETALLE[]
 }
 
 model TB_MATERIAL_FISICO {
-  MatFisId           Int                        @id @default(autoincrement())
-  MatBibId           Int
-  MatFisCodEje       String                     @db.VarChar(50)
-  MatFisEst          String                     @db.VarChar(20)   // disponible, prestado, dañado
-  MatFisUbi          String                     @db.VarChar(100)
+  MatFisId              Int                       @id @default(autoincrement())
+  MatBibId              Int
+  MatFisCodEje          String                    @db.VarChar(50)
+  MatFisEst             String                    @db.VarChar(20)
+  MatFisUbi             String                    @db.VarChar(100)
+  MatFisAct             Boolean                   @default(true)
+  MatFisFecCre          DateTime                  @default(now())
+  MatFisFecAct          DateTime                  @default(now()) @updatedAt
   materialBibliografico TB_MATERIAL_BIBLIOGRAFICO @relation(fields: [MatBibId], references: [MatBibId])
-  prestamosDetalle TB_PRESTAMO_DETALLE[]
+  prestamosDetalle      TB_PRESTAMO_DETALLE[]
 
   @@unique([MatBibId, MatFisCodEje])
 }
 
 model TB_MATERIAL_VIRTUAL {
-  MatVirId           Int                        @id @default(autoincrement())
-  MatBibId           Int                        @unique
-  MatVirUrlAcc       String                     @db.VarChar(255)
-  MatVirForArc       String                     @db.VarChar(50)
+  MatVirId              Int                       @id @default(autoincrement())
+  MatBibId              Int                       @unique
+  MatVirUrlAcc          String                    @db.VarChar(255)
+  MatVirForArc          String                    @db.VarChar(50)
+  MatVirAct             Boolean                   @default(true)
+  MatVirFecCre          DateTime                  @default(now())
+  MatVirFecAct          DateTime                  @default(now()) @updatedAt
   materialBibliografico TB_MATERIAL_BIBLIOGRAFICO @relation(fields: [MatBibId], references: [MatBibId])
-  prestamosDetalle TB_PRESTAMO_DETALLE[]
+  prestamosDetalle      TB_PRESTAMO_DETALLE[]
 }
 
 model TB_AUTOR {
-  AutId              Int                   @id @default(autoincrement())
-  AutNom             String                @db.VarChar(100)
-  AutApe             String                @db.VarChar(100)
-  AutDoc             String                @unique @db.VarChar(50)
-  AutEma             String?               @db.VarChar(100) @unique
-  AutFecCre          DateTime              @default(now())
-  AutFecAct          DateTime              @default(now()) @updatedAt
-  AutAct             Boolean               @default(true)
-  materialesAutor    TB_AUTOR_MATERIAL[]
+  AutId           Int                 @id @default(autoincrement())
+  AutNom          String              @db.VarChar(100)
+  AutApe          String              @db.VarChar(100)
+  AutEma          String?             @unique @db.VarChar(100)
+  AutFecCre       DateTime            @default(now())
+  AutFecAct       DateTime            @default(now()) @updatedAt
+  AutAct          Boolean             @default(true)
+  AutDoc          String              @unique @db.VarChar(50)
+  materialesAutor TB_AUTOR_MATERIAL[]
 }
 
 model TB_AUTOR_MATERIAL {
-  AutMatId           Int                   @id @default(autoincrement())
-  MatBibId           Int
-  AutId              Int
-  AutMatFecCre       DateTime              @default(now())
-  AutMatFecAct       DateTime              @default(now()) @updatedAt
-  AutMatAct          Boolean               @default(true)
+  AutMatId              Int                       @id @default(autoincrement())
+  MatBibId              Int
+  AutId                 Int
+  AutMatFecCre          DateTime                  @default(now())
+  AutMatAct             Boolean                   @default(true)
+  AutMatFecAct          DateTime                  @default(now()) @updatedAt
+  autor                 TB_AUTOR                  @relation(fields: [AutId], references: [AutId])
   materialBibliografico TB_MATERIAL_BIBLIOGRAFICO @relation(fields: [MatBibId], references: [MatBibId])
-  autor                 TB_AUTOR           @relation(fields: [AutId], references: [AutId])
 
   @@unique([MatBibId, AutId])
 }
 
 model TB_PRESTAMO {
-  PreId        Int                   @id @default(autoincrement())
-  LecId        Int
-  UsuId        Int
-  PreFecPre    DateTime              @default(now())
-  PreFecVen    DateTime?
-  PreFecDev    DateTime?
-  PreEst       String                @db.VarChar(20) // activo, devuelto, vencido
-  PreObs       String?               @db.Text
-  PreFecCre    DateTime              @default(now())
-  PreFecAct    DateTime              @default(now()) @updatedAt
-  PreAct       Boolean               @default(true)
-
-  lector       TB_LECTOR             @relation(fields: [LecId], references: [LecId])
-  usuario      TB_USUARIO            @relation(fields: [UsuId], references: [UsuId])
-  detalles     TB_PRESTAMO_DETALLE[]
+  PreId     Int                   @id @default(autoincrement())
+  LecId     Int
+  UsuId     Int
+  PreFecPre DateTime              @default(now())
+  PreFecVen DateTime?
+  PreFecDev DateTime?
+  PreEst    String                @db.VarChar(20)
+  PreObs    String?
+  PreFecCre DateTime              @default(now())
+  PreFecAct DateTime              @default(now()) @updatedAt
+  PreAct    Boolean               @default(true)
+  lector    TB_LECTOR             @relation(fields: [LecId], references: [LecId])
+  usuario   TB_USUARIO            @relation(fields: [UsuId], references: [UsuId])
+  detalles  TB_PRESTAMO_DETALLE[]
 }
 
 model TB_PRESTAMO_DETALLE {
-  PreDetId     Int                   @id @default(autoincrement())
-  PreId        Int
-  MatBibId     Int
-  MatFisId     Int?                  // Si es físico
-  MatVirId     Int?                  // O Si es virtual
-  PreTip       TipoPrestamo
-  PreFecVen    DateTime?
-  PreFecDev    DateTime?
-  PreEst       String                @db.VarChar(20) // activo, devuelto, vencido
-
-  prestamo     TB_PRESTAMO           @relation(fields: [PreId], references: [PreId])
+  PreDetId              Int                       @id @default(autoincrement())
+  PreId                 Int
+  MatBibId              Int
+  MatFisId              Int?
+  MatVirId              Int?
+  PreTip                TipoPrestamo
+  PreFecVen             DateTime?
+  PreFecDev             DateTime?
+  PreEst                String                    @db.VarChar(20)
   materialBibliografico TB_MATERIAL_BIBLIOGRAFICO @relation(fields: [MatBibId], references: [MatBibId])
   materialFisico        TB_MATERIAL_FISICO?       @relation(fields: [MatFisId], references: [MatFisId])
   materialVirtual       TB_MATERIAL_VIRTUAL?      @relation(fields: [MatVirId], references: [MatVirId])
+  prestamo              TB_PRESTAMO               @relation(fields: [PreId], references: [PreId])
 }
 
 enum TipoPrestamo {
@@ -156,4 +154,5 @@ enum FormatoMaterial {
   FISICO
   VIRTUAL
   MIXTO
+  NINGUNO
 }
