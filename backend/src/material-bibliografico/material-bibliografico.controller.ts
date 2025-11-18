@@ -43,6 +43,12 @@ export class MaterialBibliograficoController {
   reactivar(@Param('id') id: string) {
     return this.materialBibliograficoService.reactivar(+id);
   }
+
+  @Roles("administrador", "bibliotecario")
+  @Patch('recalcular-formato/:id')
+  recalcularFormato(@Param('id') id: string) {
+    return this.materialBibliograficoService.recalcularFormato(+id);
+  }
   
   @Roles("administrador", "bibliotecario")
   @Delete(':id')
