@@ -1,0 +1,45 @@
+.admin-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden; 
+}
+
+.content {
+  flex: 1;
+  background: #f4f4f4;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+    
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 25px;
+  background: white;
+  border-bottom: 1px solid #ddd;
+}
+
+.code {
+  color: #0033cc;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.page-title {
+  padding: 20px;
+}
+
+.page-title h1 {
+  margin: 0;
+  font-size: 26px;
+  color: black;
+}
+.page-content {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 20px; /* Puedes ajustar */
+  box-sizing: border-box;
+}
+

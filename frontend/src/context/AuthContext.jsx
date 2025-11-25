@@ -7,7 +7,7 @@ export function AuthProvider({ children }) {
 
   const login = async ({ email, password }) => {
     // Simulación de login (luego lo conectamos a API)
-    if (email === "admin@gmail.com" && password === "123456") {
+    if (email === "vmaldonadov@unsa.edu.pe" && password === "21") {
       const userData = { email, role: "admin" };
       setUser(userData);
       return { success: true };
