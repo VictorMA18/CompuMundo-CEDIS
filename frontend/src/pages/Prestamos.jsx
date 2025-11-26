@@ -1,4 +1,3 @@
-import AdminLayout from "../layout/AdminLayout";
 import "./Prestamos.css";
 
 export default function Prestamos() {
@@ -27,7 +26,7 @@ export default function Prestamos() {
   ];
 
   return (
-    <AdminLayout title="Préstamos">
+    <>
       <div className="filters-card">
         <input className="input" placeholder="Buscar por lector o bibliografía" />
         <input className="input" type="date" />
@@ -78,7 +77,7 @@ export default function Prestamos() {
           </tbody>
         </table>
       </div>
-    </AdminLayout>
+    </>
   );
 }
 

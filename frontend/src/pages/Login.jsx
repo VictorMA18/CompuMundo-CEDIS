@@ -18,7 +18,7 @@ export default function Login() {
     const { success, message } = await login(form);
 
     if (success) {
-      navigate("/");
+      navigate("/admin/prestamos");
     } else {
       setError(message);
     }

@@ -1,21 +1,27 @@
 import { Routes, Route } from "react-router-dom";
-import Home from "../pages/Home";
 import Login from "../pages/Login";
 import PrivateRoute from "./PrivateRoute";
-import Prestamos from "../pages/Prestamos"
+
+import AdminLayout from "../layout/AdminLayout";
+import Prestamos from "../pages/Prestamos";
+import Lectores from "../pages/Lectores";
+
 export default function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
 
       <Route
-        path="/"
+        path="/admin"
         element={
           <PrivateRoute>
-            <Prestamos />
+            <AdminLayout />
           </PrivateRoute>
         }
-      />
+      >
+        <Route path="prestamos" element={<Prestamos />} />
+        <Route path="lectores" element={<Lectores />} />
+      </Route>
     </Routes>
   );
 }

@@ -1,5 +1,6 @@
 import Sidebar from "./Sidebar";
 import "./AdminLayout.css";
+import { Outlet } from "react-router-dom";
 
 export default function AdminLayout({ title, children }) {
   return (
@@ -16,6 +17,7 @@ export default function AdminLayout({ title, children }) {
         </div>
 
         <div className="page-content">{children}</div>
+        <Outlet />
       </main>
     </div>
   );
