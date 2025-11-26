@@ -1,7 +1,10 @@
 import { useState } from "react";
 import "./Lectores.css";
+import { useOutletContext } from "react-router-dom";
 
 export default function Lectores() {
+  const setTitle = useOutletContext();
+  if (setTitle) setTitle("Lectores");
   const [search, setSearch] = useState("");
   const [date, setDate] = useState("");
   const [type, setType] = useState("");

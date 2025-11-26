@@ -1,6 +1,10 @@
+import { useOutletContext } from "react-router-dom";
 import "./Prestamos.css";
 
 export default function Prestamos() {
+  const setTitle = useOutletContext();
+
+  if (setTitle) setTitle("Préstamos");
   const prestamos = [
     {
       id: 1,
