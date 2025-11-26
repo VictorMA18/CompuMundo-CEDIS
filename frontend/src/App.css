@@ -1,5 +1,13 @@
-body, html {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden !important;
+/* Reiniciar márgenes y paddings */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
+
+/* html y body ocupan toda la pantalla */
+html, body, #root {
+  height: 100%;
+  font-family: Arial, sans-serif;
+}
+

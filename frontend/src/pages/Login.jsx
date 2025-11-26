@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import "./Login.css";
 
 export default function Login() {
   const { login } = useAuth();
@@ -9,26 +10,25 @@ export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const { success, message } = await login(form);
 
     if (success) {
-      navigate("/admin/prestamos");
+      navigate("/admin"); // redirige a dashboard
     } else {
       setError(message);
     }
   };
 
   return (
-    <div style={{ margin: "80px auto", width: "350px" }}>
-      <h2>Iniciar Sesión</h2>
+    <div className="login-container">
+      <form className="login-card" onSubmit={handleSubmit}>
+        <h2 className="login-title">Iniciar Sesión</h2>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <input
           type="email"
           name="email"
@@ -36,6 +36,7 @@ export default function Login() {
           value={form.email}
           onChange={handleChange}
           required
+          className="login-input"
         />
 
         <input
@@ -45,11 +46,14 @@ export default function Login() {
           value={form.password}
           onChange={handleChange}
           required
+          className="login-input"
         />
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <p className="login-error">{error}</p>}
 
-        <button type="submit">Ingresar</button>
+        <button type="submit" className="login-button">
+          Ingresar
+        </button>
       </form>
     </div>
   );
