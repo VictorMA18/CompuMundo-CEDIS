@@ -1,0 +1,72 @@
+.sidebar {
+  display: block;
+  width: 350px;
+  height: 100vh;     
+  background: #a80000;
+  padding: 20px 10px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow-y: auto;   
+}
+
+.user-box {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.avatar {
+  width: 55px;
+  height: 55px;
+  background: white;
+  color: #a80000;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin: auto;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.username {
+  margin: 10px 0 0;
+  font-weight: bold;
+}
+
+.role {
+  opacity: 0.8;
+  font-size: 14px;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-grow: 1;
+}
+
+.menu a {
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.menu a.active {
+  background: #ffffff33;
+}
+
+.logout {
+  background: #800000;
+  border: none;
+  padding: 10px;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+

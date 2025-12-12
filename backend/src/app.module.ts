@@ -8,6 +8,11 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { LectoresModule } from './lectores/lectores.module';
 import { CategoriasModule } from './categorias/categorias.module';
+import { MaterialBibliograficoModule } from './material-bibliografico/material-bibliografico.module';
+import { AutorModule } from './autor/autor.module';
+import { AutorMaterialModule } from './autor-material/autor-material.module';
+import { MaterialFisicoModule } from './material-fisico/material-fisico.module';
+import { MaterialVirtualModule } from './material-virtual/material-virtual.module';
 
 @Module({
   imports: [
@@ -18,6 +23,11 @@ import { CategoriasModule } from './categorias/categorias.module';
     AuthModule,
     LectoresModule,
     CategoriasModule,
+    MaterialBibliograficoModule,
+    AutorModule,
+    AutorMaterialModule,
+    MaterialFisicoModule,
+    MaterialVirtualModule,
   ],
   controllers: [AppController],
   providers: [AppService],
