@@ -17,6 +17,30 @@ export class AutorMaterialService {
   constructor(private prisma: PrismaService) {}
 
   async create(createAutorMaterialDto: CreateAutorMaterialDto): Promise<IAutorMaterial> {
+    // Validar que el material bibliográfico esté activo
+    const material = await this.prisma.tB_MATERIAL_BIBLIOGRAFICO.findUnique({
+      where: { MatBibId: createAutorMaterialDto.MatBibId },
+      select: { MatBibAct: true },
+    });
+    if (!material) {
+      throw new BadRequestException('El material bibliográfico no existe.');
+    }
+    if (!material.MatBibAct) {
+      throw new BadRequestException('El material bibliográfico está desactivado.');
+    }
+
+    // Validar que el autor esté activo
+    const autor = await this.prisma.tB_AUTOR.findUnique({
+      where: { AutId: createAutorMaterialDto.AutId },
+      select: { AutAct: true },
+    });
+    if (!autor) {
+      throw new BadRequestException('El autor no existe.');
+    }
+    if (!autor.AutAct) {
+      throw new BadRequestException('El autor está desactivado.');
+    }
+
     const existente = await this.prisma.tB_AUTOR_MATERIAL.findUnique({
       where: {
         MatBibId_AutId: {
