@@ -4,6 +4,9 @@ import { CreateMaterialBibliograficoDto } from './dto/create-material-bibliograf
 import { UpdateMaterialBibliograficoDto } from './dto/update-material-bibliografico.dto';
 import { AutorMaterialService } from '../autor-material/autor-material.service';
 import { IMaterialBibliografico } from './interface/material-bibliografico.interface';
+import { IMaterialBibliograficoExtendido } from './interface/material-bibliografico-extendido.interface';
+import { CategoriasService } from 'src/categorias/categorias.service';
+import { AutorService } from 'src/autor/autor.service';
 
 const materialSelect = {
   MatBibId: true,
@@ -23,6 +26,8 @@ export class MaterialBibliograficoService {
   constructor(
     private prisma: PrismaService,
     private autorMaterialService: AutorMaterialService,
+    private categoriaService: CategoriasService,
+    private autorService: AutorService
   ) {}
 
   private async withAutores(material: IMaterialBibliografico): Promise<IMaterialBibliografico> {
@@ -45,17 +50,16 @@ export class MaterialBibliograficoService {
       where: { MatBibCod: createMaterialBibliograficoDto.MatBibCod },
     });
     if (existente) {
-      throw new BadRequestException('El código de material ya existe');
+      if (existente.MatBibAct) {
+        throw new BadRequestException('El código de material ya existe');
+      } else {
+        throw new BadRequestException('El código de material ya existe pero está desactivado. Debe reactivarse.');
+      }
     }
 
     // Validar existencia de la categoría si se envía CatId
     if (createMaterialBibliograficoDto.CatId) {
-      const categoria = await this.prisma.tB_CATEGORIA.findUnique({
-        where: { CatId: createMaterialBibliograficoDto.CatId },
-      });
-      if (!categoria) {
-        throw new BadRequestException('La categoría especificada no existe');
-      }
+      await this.categoriaService.findOne(createMaterialBibliograficoDto.CatId);
     }
 
     const esAnonimo = !Array.isArray(createMaterialBibliograficoDto.autores);
@@ -75,13 +79,7 @@ export class MaterialBibliograficoService {
     if (!esAnonimo) {
       for (const autorDto of createMaterialBibliograficoDto.autores!) {
         // Buscar autor por identificador único (por ejemplo, AutDoc)
-        const autor = await this.prisma.tB_AUTOR.findUnique({
-          where: { AutDoc: autorDto.AutDoc },
-          select: { AutId: true },
-        });
-        if (!autor) {
-          throw new NotFoundException(`Autor con identificador ${autorDto.AutDoc} no encontrado`);
-        }
+        const autor = await this.autorService.findOneByDoc(autorDto.AutDoc);
         await this.autorMaterialService.create({
           MatBibId: material.MatBibId,
           AutId: autor.AutId,
@@ -112,7 +110,7 @@ export class MaterialBibliograficoService {
     });
   }
 
-  async findAll(): Promise<any[]> {
+  async findAll(): Promise<IMaterialBibliograficoExtendido[]> {
     const materiales = await this.prisma.tB_MATERIAL_BIBLIOGRAFICO.findMany({
       where: { MatBibAct: true },
       select: {
@@ -139,6 +137,7 @@ export class MaterialBibliograficoService {
           select: { MatVirId: true },
         },
       },
+      orderBy: { MatBibId: "asc"}
     });
 
     return materiales.map(material => {
@@ -154,7 +153,7 @@ export class MaterialBibliograficoService {
     });
   }
 
-  async findAllDesactivados(): Promise<any[]> {
+  async findAllDesactivados(): Promise<IMaterialBibliograficoExtendido[]> {
     const materiales = await this.prisma.tB_MATERIAL_BIBLIOGRAFICO.findMany({
       where: { MatBibAct: false },
       select: {
@@ -181,6 +180,7 @@ export class MaterialBibliograficoService {
           select: { MatVirId: true },
         },
       },
+      orderBy: { MatBibId: 'asc' },
     });
 
     return materiales.map(material => {
@@ -196,7 +196,7 @@ export class MaterialBibliograficoService {
     });
   }
 
-  async findOne(id: number): Promise<any> {
+  async findOne(id: number): Promise<IMaterialBibliograficoExtendido> {
     const material = await this.prisma.tB_MATERIAL_BIBLIOGRAFICO.findUnique({
       where: { MatBibId: id },
       select: {
@@ -245,21 +245,11 @@ export class MaterialBibliograficoService {
   id: number,
   updateMaterialBibliograficoDto: UpdateMaterialBibliograficoDto,
   ): Promise<IMaterialBibliografico> {
-    const material = await this.prisma.tB_MATERIAL_BIBLIOGRAFICO.findUnique({
-      where: { MatBibId: id },
-      select: materialSelect,
-    });
-    if (!material)
-      throw new NotFoundException('Material bibliográfico no encontrado');
+    const material = await this.findOne(id);
 
     // Validar existencia de la categoría si se envía CatId
     if (updateMaterialBibliograficoDto.CatId) {
-      const categoria = await this.prisma.tB_CATEGORIA.findUnique({
-        where: { CatId: updateMaterialBibliograficoDto.CatId },
-      });
-      if (!categoria) {
-        throw new BadRequestException('La categoría especificada no existe');
-      }
+      await this.categoriaService.findOne(updateMaterialBibliograficoDto.CatId);
     }
 
     // Validar unicidad de MatBibCod si se va a actualizar
@@ -282,13 +272,7 @@ export class MaterialBibliograficoService {
       });
 
       for (const autorDto of updateMaterialBibliograficoDto.autores) {
-        const autor = await this.prisma.tB_AUTOR.findUnique({
-          where: { AutDoc: autorDto.AutDoc },
-          select: { AutId: true },
-        });
-        if (!autor) {
-          throw new NotFoundException(`Autor con identificador ${autorDto.AutDoc} no encontrado`);
-        }
+        const autor = await this.autorService.findOneByDoc(autorDto.AutDoc);
 
         const relacion = await this.prisma.tB_AUTOR_MATERIAL.findFirst({
           where: { MatBibId: id, AutId: autor.AutId },
@@ -348,12 +332,7 @@ export class MaterialBibliograficoService {
   }
 
   async remove(id: number): Promise<IMaterialBibliografico> {
-    const material = await this.prisma.tB_MATERIAL_BIBLIOGRAFICO.findUnique({
-      where: { MatBibId: id },
-      select: materialSelect,
-    });
-    if (!material)
-      throw new NotFoundException('Material bibliográfico no encontrado');
+    await this.findOne(id);
     return this.prisma.tB_MATERIAL_BIBLIOGRAFICO.update({
       where: { MatBibId: id },
       data: { MatBibAct: false },
