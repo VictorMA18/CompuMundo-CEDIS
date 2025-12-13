@@ -27,7 +27,11 @@ export class AutorService {
     });
 
     if (autor) {
-      throw new BadRequestException('El autor ya existe, si está desactivado debe reactivarse.');
+      if (autor.AutAct) {
+        throw new BadRequestException('El autor ya existe.');
+      } else {
+        throw new BadRequestException('El autor ya existe pero está desactivado. Debe reactivarse.');
+      }
     }
 
     if (createAutorDto.AutEma) {
@@ -49,19 +53,34 @@ export class AutorService {
   }
 
   async findAll(): Promise<IAutor[]> {
-    return this.prisma.tB_AUTOR.findMany({ select: autorSelect });
+    return this.prisma.tB_AUTOR.findMany({
+      where: { AutAct: true },          
+      select: autorSelect,
+      orderBy: { AutId: 'asc' },         
+    });
   }
 
   async findAllDesactivados(): Promise<IAutor[]> {
     return this.prisma.tB_AUTOR.findMany({
       where: { AutAct: false },
       select: autorSelect,
+      orderBy: { AutId: 'asc' },
     });
   }
 
   async findOne(id: number): Promise<IAutor> {
     const autor = await this.prisma.tB_AUTOR.findUnique({
       where: { AutId: id },
+      select: autorSelect,
+    });
+    if (!autor) throw new NotFoundException('Autor no encontrado');
+    if (!autor.AutAct) throw new BadRequestException('El autor está desactivado');
+    return autor;
+  }
+
+  async findOneByDoc(AutDoc: string): Promise<IAutor> {
+    const autor = await this.prisma.tB_AUTOR.findFirst({
+      where: { AutDoc },
       select: autorSelect,
     });
     if (!autor) throw new NotFoundException('Autor no encontrado');
