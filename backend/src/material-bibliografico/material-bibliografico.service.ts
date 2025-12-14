@@ -213,7 +213,6 @@ export class MaterialBibliograficoService {
   async findOne(
     id: number,
     prismaClient: PrismaService | Prisma.TransactionClient = this.prisma,
-    throwIfInactive = true
   ): Promise<IMaterialBibliograficoExtendido> {
     const material = await prismaClient.tB_MATERIAL_BIBLIOGRAFICO.findUnique({
       where: { MatBibId: id },
@@ -244,7 +243,7 @@ export class MaterialBibliograficoService {
     });
     if (!material)
       throw new NotFoundException('Material bibliográfico no encontrado');
-    if (throwIfInactive && !material.MatBibAct)
+    if (!material.MatBibAct)
       throw new BadRequestException('El material bibliográfico está desactivado');
 
     const totalFisicos = material.materialesFisicos.length;
