@@ -9,18 +9,37 @@ import Lectores from "../pages/Lectores";
 export default function AppRouter() {
   return (
     <Routes>
-      {/* Login fuera de AdminLayout */}
+
+      {/* Ruta inicial */}
+      <Route path="/" element={<Navigate to="/login" />} />
+
+      {/* Login */}
       <Route path="/login" element={<Login />} />
 
+      {/* ADMIN */}
       <Route
-        path="/admin/*" 
+        path="/admin/*"
         element={
           <PrivateRoute>
             <AdminLayout />
           </PrivateRoute>
         }
       >
-        <Route index element={<Prestamos />} /> {/* o Dashboard */}
+        <Route index element={<Prestamos />} />
+        <Route path="prestamos" element={<Prestamos />} />
+        <Route path="lectores" element={<Lectores />} />
+      </Route>
+
+      {/* BIBLIOTECARIO */}
+      <Route
+        path="/bibliotecario/*"
+        element={
+          <PrivateRoute>
+            <AdminLayout />
+          </PrivateRoute>
+        }
+      >
+        <Route index element={<Prestamos />} />
         <Route path="prestamos" element={<Prestamos />} />
         <Route path="lectores" element={<Lectores />} />
       </Route>

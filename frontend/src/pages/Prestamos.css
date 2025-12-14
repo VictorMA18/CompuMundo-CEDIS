@@ -1,56 +1,136 @@
+/* =========================
+   GENERAL
+========================= */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: #f4f6f8;
+}
+
+/* =========================
+   FILTROS
+========================= */
 .filters-card {
-  background: white;
+  background: #ffffff;
   padding: 15px;
   border-radius: 10px;
   display: flex;
   gap: 12px;
   margin-bottom: 20px;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .input {
-  padding: 8px;
+  padding: 9px 10px;
   border: 1px solid #ccc;
-  border-radius: 6px;
+  border-radius: 8px;
   flex: 1;
+  font-size: 14px;
+  color: #222;
+  background: #fafafa;
 }
 
+.input:focus {
+  outline: none;
+  border-color: #a80000;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(168, 0, 0, 0.15);
+}
+
+/* =========================
+   BOTONES
+========================= */
 .btn {
   background: #a80000;
   color: white;
   border: none;
-  padding: 8px 15px;
-  border-radius: 6px;
+  padding: 9px 16px;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
 }
 
+.btn:hover {
+  background: #8f0000;
+}
+
+.btn.secondary {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.btn.secondary:hover {
+  background: #d3d3d3;
+}
+
+.btn.danger {
+  background: #d32f2f;
+}
+
+.btn.danger:hover {
+  background: #b71c1c;
+}
+
+/* =========================
+   TABLA
+========================= */
 .table-card {
-  background: white;
+  background: #ffffff;
   padding: 15px;
   border-radius: 10px;
-  overflow-x: auto; /* Permite scroll horizontal si es necesario */
+  overflow-x: auto;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 800px;  
+  min-width: 900px;
 }
 
 thead {
   background: #f2f2f2;
 }
 
-th, td {
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-  color: black;
+th {
+  text-align: left;
+  font-size: 14px;
+  color: #333;
 }
 
+th,
+td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e0e0e0;
+  color: #222;
+  font-size: 14px;
+}
+
+tbody tr:hover {
+  background: #fafafa;
+}
+
+/* Texto secundario */
+.sub {
+  font-size: 12px;
+  color: #777;
+  margin-top: 2px;
+}
+
+/* =========================
+   ESTADOS
+========================= */
 .estado {
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 12px;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 500;
   color: white;
+  display: inline-block;
 }
 
 .estado.vigente {
@@ -65,11 +145,127 @@ th, td {
   background: #00c2a8;
 }
 
+/* =========================
+   ACCIONES
+========================= */
 .actions button {
-  margin-right: 8px;
+  margin-right: 6px;
   border: none;
   background: none;
   cursor: pointer;
   font-size: 18px;
+}
+
+.actions button:hover {
+  transform: scale(1.1);
+}
+
+/* =========================
+   MODAL BACKDROP
+========================= */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+/* =========================
+   MODAL WINDOW
+========================= */
+.modal {
+  background: #ffffff;
+  width: 520px;
+  max-width: 95%;
+  border-radius: 14px;
+  padding: 22px 25px;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.3);
+  animation: modalFade 0.25s ease;
+  color: #222;
+}
+
+/* Animación */
+@keyframes modalFade {
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #a80000;
+}
+
+/* =========================
+   DETALLE PRÉSTAMO (VER)
+========================= */
+.modal p {
+  margin: 6px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.modal p b {
+  color: #111;
+}
+
+/* Grid informativo */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+  background: #f9f9f9;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+/* =========================
+   FORMULARIO
+========================= */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.form-grid input,
+.form-grid select {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #bbb;
+  font-size: 14px;
+  background: #fafafa;
+  color: #222;
+}
+
+.form-grid input:focus,
+.form-grid select:focus {
+  outline: none;
+  border-color: #a80000;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(168, 0, 0, 0.15);
+}
+
+/* =========================
+   MODAL ACTIONS
+========================= */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 

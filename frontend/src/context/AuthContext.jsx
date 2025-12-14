@@ -1,4 +1,4 @@
-import { createContext, useState, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 
 const AuthContext = createContext();
 
@@ -6,12 +6,18 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
   const login = async ({ email, password }) => {
-    // Simulación de login (luego lo conectamos a API)
-    if (email === "vmaldonadov@unsa.edu.pe" && password === "21") {
+    if (email === "admin@unsa.edu.pe" && password === "21") {
       const userData = { email, role: "admin" };
       setUser(userData);
-      return { success: true };
+      return { success: true, user: userData };
     }
+
+    if (email === "biblio@unsa.edu.pe" && password === "21") {
+      const userData = { email, role: "bibliotecario" };
+      setUser(userData);
+      return { success: true, user: userData };
+    }
+
     return { success: false, message: "Credenciales incorrectas" };
   };
 

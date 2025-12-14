@@ -1,39 +1,63 @@
-.login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background: #f3f4f6;
-}
+import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import "./Login.css";
 
-.login-card {
-  background: white;
-  width: 380px;
-  padding: 30px;
-  border-radius: 14px;
-  box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
-}
+export default function Login() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-.login-title {
-  text-align: center;
-  margin-bottom: 20px;
-  font-weight: 600;
-}
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
 
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
-.login-error {
-  color: red;
-  font-size: 14px;
-  margin-top: -8px;
-  text-align: center;
-}
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const { success, message } = await login(form);
 
-.login-btn {
-  width: 100%;
-}
+    if (success) {
+      if (user.role === "admin") {
+        navigate("/admin");
+      } else if (user.role === "bibliotecario") {
+        navigate("/bibliotecario");
+      }
+    }
 
+  };
+
+  return (
+    <div className="login-container">
+      <form className="login-card" onSubmit={handleSubmit}>
+        <h2 className="login-title">Iniciar Sesión</h2>
+
+        <input
+          type="email"
+          name="email"
+          placeholder="Correo"
+          value={form.email}
+          onChange={handleChange}
+          required
+          className="login-input"
+        />
+
+        <input
+          type="password"
+          name="password"
+          placeholder="Contraseña"
+          value={form.password}
+          onChange={handleChange}
+          required
+          className="login-input"
+        />
+
+        {error && <p className="login-error">{error}</p>}
+
+        <button type="submit" className="login-button">
+          Ingresar
+        </button>
+      </form>
+    </div>
+  );
+}
