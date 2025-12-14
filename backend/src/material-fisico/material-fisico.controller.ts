@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { MaterialFisicoService } from './material-fisico.service';
 import { CreateMaterialFisicoDto } from './dto/create-material-fisico.dto';
 import { UpdateMaterialFisicoDto } from './dto/update-material-fisico.dto';
@@ -22,20 +22,36 @@ export class MaterialFisicoController {
     return this.materialFisicoService.findAll();
   }
 
+  @Get('desactivados')
+  findAllDesactivados() {
+    return this.materialFisicoService.findAllDesactivados();
+  }
+
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.materialFisicoService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.materialFisicoService.findOne(id);
+  }
+
+  @Get('material/:matBibId')
+  findByMaterial(@Param('matBibId', ParseIntPipe) matBibId: number) {
+    return this.materialFisicoService.findByMaterialBibliografico(matBibId);
   }
 
   @Roles('administrador', 'bibliotecario')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMaterialFisicoDto: UpdateMaterialFisicoDto) {
-    return this.materialFisicoService.update(+id, updateMaterialFisicoDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateMaterialFisicoDto: UpdateMaterialFisicoDto) {
+    return this.materialFisicoService.update(id, updateMaterialFisicoDto);
+  }
+
+  @Roles('administrador', 'bibliotecario')
+  @Patch('reactivar/:id')
+  reactivar(@Param('id', ParseIntPipe) id: number) {
+    return this.materialFisicoService.reactivar(id);
   }
 
   @Roles('administrador', 'bibliotecario')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.materialFisicoService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.materialFisicoService.remove(id);
   }
 }

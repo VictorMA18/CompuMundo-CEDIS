@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { MaterialVirtualService } from './material-virtual.service';
 import { CreateMaterialVirtualDto } from './dto/create-material-virtual.dto';
 import { UpdateMaterialVirtualDto } from './dto/update-material-virtual.dto';
@@ -22,20 +22,36 @@ export class MaterialVirtualController {
     return this.materialVirtualService.findAll();
   }
 
+  @Get('desactivados')
+  findAllDesactivados() {
+    return this.materialVirtualService.findAllDesactivados();
+  }
+
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.materialVirtualService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.materialVirtualService.findOne(id);
+  }
+
+  @Get('material/:matBibId')
+  findByMaterial(@Param('matBibId', ParseIntPipe) matBibId: number) {
+    return this.materialVirtualService.findByMaterialBibliografico(matBibId);
   }
 
   @Roles('administrador', 'bibliotecario')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMaterialVirtualDto: UpdateMaterialVirtualDto) {
-    return this.materialVirtualService.update(+id, updateMaterialVirtualDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateMaterialVirtualDto: UpdateMaterialVirtualDto) {
+    return this.materialVirtualService.update(id, updateMaterialVirtualDto);
+  }
+
+  @Roles('administrador', 'bibliotecario')
+  @Patch('reactivar/:id')
+  reactivar(@Param('id', ParseIntPipe) id: number) {
+    return this.materialVirtualService.reactivar(id);
   }
 
   @Roles('administrador', 'bibliotecario')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.materialVirtualService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.materialVirtualService.remove(id);
   }
 }

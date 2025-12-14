@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { CategoriasService } from './categorias.service';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { UpdateCategoriaDto } from './dto/update-categoria.dto';
@@ -22,20 +22,31 @@ export class CategoriasController {
     return this.categoriasService.findAll();
   }
 
+  @Get('desactivadas')
+  findAllDesactivadas() {
+    return this.categoriasService.findAllDesactivadas();
+  }
+
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.categoriasService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.categoriasService.findOne(id);
   }
 
   @Roles('administrador', 'bibliotecario')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCategoriaDto: UpdateCategoriaDto) {
-    return this.categoriasService.update(+id, updateCategoriaDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateCategoriaDto: UpdateCategoriaDto) {
+    return this.categoriasService.update(id, updateCategoriaDto);
+  }
+
+  @Roles('administrador', 'bibliotecario')
+  @Patch('reactivar/:id')
+  reactivar(@Param('id', ParseIntPipe) id: number) {
+    return this.categoriasService.reactivar(id);
   }
 
   @Roles('administrador', 'bibliotecario')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.categoriasService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.categoriasService.remove(id);
   }
 }

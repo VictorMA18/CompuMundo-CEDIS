@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { MaterialBibliograficoService } from './material-bibliografico.service';
 import { CreateMaterialBibliograficoDto } from './dto/create-material-bibliografico.dto';
 import { UpdateMaterialBibliograficoDto } from './dto/update-material-bibliografico.dto';
@@ -28,31 +28,31 @@ export class MaterialBibliograficoController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.materialBibliograficoService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.materialBibliograficoService.findOne(id);
   }
 
   @Roles("administrador", "bibliotecario")
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMaterialBibliograficoDto: UpdateMaterialBibliograficoDto) {
-    return this.materialBibliograficoService.update(+id, updateMaterialBibliograficoDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateMaterialBibliograficoDto: UpdateMaterialBibliograficoDto) {
+    return this.materialBibliograficoService.update(id, updateMaterialBibliograficoDto);
   }
 
   @Roles("administrador", "bibliotecario")
   @Patch('reactivar/:id')
-  reactivar(@Param('id') id: string) {
-    return this.materialBibliograficoService.reactivar(+id);
+  reactivar(@Param('id', ParseIntPipe) id: number) {
+    return this.materialBibliograficoService.reactivar(id);
   }
 
   @Roles("administrador", "bibliotecario")
   @Patch('recalcular-formato/:id')
-  recalcularFormato(@Param('id') id: string) {
-    return this.materialBibliograficoService.recalcularFormato(+id);
+  recalcularFormato(@Param('id', ParseIntPipe) id: number) {
+    return this.materialBibliograficoService.recalcularFormato(id);
   }
   
   @Roles("administrador", "bibliotecario")
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.materialBibliograficoService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.materialBibliograficoService.remove(id);
   }
 }
