@@ -6,6 +6,8 @@ import AdminLayout from "../layout/AdminLayout";
 import Prestamos from "../pages/Prestamos";
 import Lectores from "../pages/Lectores";
 import Documentos from "../pages/Documentos";
+import Usuarios from "../pages/Usuarios";
+import Categorias from "../pages/Categorias";
 
 
 export default function AppRouter() {
@@ -45,6 +47,9 @@ export default function AppRouter() {
         <Route path="prestamos" element={<Prestamos />} />
         <Route path="lectores" element={<Lectores />} />
         <Route path="documentos" element={<Documentos />} />
+        <Route path="usuarios" element={<Usuarios />} />
+        <Route path="configuracion/categorias" element={<Categorias />}/>
+
       </Route>
 
       <Route path="*" element={<Navigate to="/login" />} />

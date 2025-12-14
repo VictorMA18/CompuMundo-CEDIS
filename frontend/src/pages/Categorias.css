@@ -6,34 +6,18 @@
 }
 
 /* =========================
-   FILTROS
+   HEADER CARD (igual a filtros)
 ========================= */
 .filters-card {
   background: #ffffff;
   padding: 15px;
   border-radius: 10px;
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 12px;
   margin-bottom: 20px;
-  align-items: center;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-}
-
-.input {
-  padding: 9px 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  flex: 1;
-  font-size: 14px;
-  color: #222;
-  background: #fafafa;
-}
-
-.input:focus {
-  outline: none;
-  border-color: #a80000;
-  background: #fff;
-  box-shadow: 0 0 0 2px rgba(168, 0, 0, 0.15);
 }
 
 /* =========================
@@ -59,16 +43,8 @@
   color: #333;
 }
 
-.btn.secondary:hover {
-  background: #d3d3d3;
-}
-
 .btn.danger {
   background: #d32f2f;
-}
-
-.btn.danger:hover {
-  background: #b71c1c;
 }
 
 /* =========================
@@ -85,36 +61,22 @@
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1000px;
 }
 
 thead {
   background: #f2f2f2;
 }
 
-th {
-  text-align: left;
-  font-size: 14px;
-  color: #333;
-}
-
 th,
 td {
   padding: 12px 10px;
   border-bottom: 1px solid #e0e0e0;
-  color: #222;
   font-size: 14px;
+  color: #222;
 }
 
 tbody tr:hover {
   background: #fafafa;
-}
-
-/* Texto secundario */
-.sub {
-  font-size: 12px;
-  color: #777;
-  margin-top: 2px;
 }
 
 /* =========================
@@ -133,7 +95,7 @@ tbody tr:hover {
 }
 
 /* =========================
-   MODAL BACKDROP
+   MODAL
 ========================= */
 .modal-backdrop {
   position: fixed;
@@ -145,18 +107,14 @@ tbody tr:hover {
   z-index: 999;
 }
 
-/* =========================
-   MODAL WINDOW
-========================= */
 .modal {
   background: #ffffff;
-  width: 520px;
+  width: 450px;
   max-width: 95%;
   border-radius: 14px;
   padding: 22px 25px;
   box-shadow: 0 15px 45px rgba(0, 0, 0, 0.3);
   animation: modalFade 0.25s ease;
-  color: #222;
 }
 
 @keyframes modalFade {
@@ -172,35 +130,7 @@ tbody tr:hover {
 
 .modal h3 {
   margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 18px;
-  font-weight: 600;
   color: #a80000;
-}
-
-/* =========================
-   DETALLE (VER)
-========================= */
-.modal p {
-  margin: 6px 0;
-  font-size: 14px;
-  color: #333;
-}
-
-.modal p b {
-  color: #111;
-}
-
-/* Grid informativo */
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 20px;
-  background: #f9f9f9;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
 }
 
 /* =========================
@@ -208,27 +138,16 @@ tbody tr:hover {
 ========================= */
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-bottom: 20px;
 }
 
-.form-grid input,
-.form-grid select {
+.form-grid input {
   padding: 10px;
   border-radius: 8px;
   border: 1px solid #bbb;
   font-size: 14px;
-  background: #fafafa;
-  color: #222;
-}
-
-.form-grid input:focus,
-.form-grid select:focus {
-  outline: none;
-  border-color: #a80000;
-  background: #ffffff;
-  box-shadow: 0 0 0 2px rgba(168, 0, 0, 0.15);
 }
 
 /* =========================

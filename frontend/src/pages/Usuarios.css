@@ -32,7 +32,7 @@
 .input:focus {
   outline: none;
   border-color: #a80000;
-  background: #fff;
+  background: #ffffff;
   box-shadow: 0 0 0 2px rgba(168, 0, 0, 0.15);
 }
 
@@ -41,7 +41,7 @@
 ========================= */
 .btn {
   background: #a80000;
-  color: white;
+  color: #ffffff;
   border: none;
   padding: 9px 16px;
   border-radius: 8px;
@@ -85,7 +85,7 @@
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1000px;
+  min-width: 850px;
 }
 
 thead {
@@ -110,13 +110,6 @@ tbody tr:hover {
   background: #fafafa;
 }
 
-/* Texto secundario */
-.sub {
-  font-size: 12px;
-  color: #777;
-  margin-top: 2px;
-}
-
 /* =========================
    ACCIONES
 ========================= */
@@ -129,7 +122,7 @@ tbody tr:hover {
 }
 
 .actions button:hover {
-  transform: scale(1.1);
+  transform: scale(1.15);
 }
 
 /* =========================
@@ -146,7 +139,7 @@ tbody tr:hover {
 }
 
 /* =========================
-   MODAL WINDOW
+   MODAL
 ========================= */
 .modal {
   background: #ffffff;
@@ -179,19 +172,8 @@ tbody tr:hover {
 }
 
 /* =========================
-   DETALLE (VER)
+   GRID DETALLE (VER)
 ========================= */
-.modal p {
-  margin: 6px 0;
-  font-size: 14px;
-  color: #333;
-}
-
-.modal p b {
-  color: #111;
-}
-
-/* Grid informativo */
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -201,6 +183,16 @@ tbody tr:hover {
   padding: 12px;
   border-radius: 8px;
   border: 1px solid #e0e0e0;
+}
+
+.modal p {
+  margin: 6px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.modal p b {
+  color: #111;
 }
 
 /* =========================
