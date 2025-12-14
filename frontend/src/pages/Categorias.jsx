@@ -43,7 +43,7 @@ export default function Categorias() {
       {/* HEADER CARD (como filtros pero sin filtros) */}
       <div className="filters-card">
         <h3 style={{ margin: 0 }}>Listado de Categorías</h3>
-        <button className="btn" onClick={() => openModal("new")}>
+        <button className="btn-new" onClick={() => openModal("new")}>
           ➕ Registrar
         </button>
       </div>

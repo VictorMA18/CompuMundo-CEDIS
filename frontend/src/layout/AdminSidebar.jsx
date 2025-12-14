@@ -25,8 +25,10 @@ export default function AdminSidebar() {
       {/* USUARIO */}
       <div className="user-box">
         <div className="avatar">AD</div>
-        <p className="username">{user?.email}</p>
-        <p className="role">Administrador</p>
+        <div className="user-info">
+          <p className="username">{user?.username}</p>
+          <p className="role">Administrador</p>
+        </div>
       </div>
 
       {/* MENÚ */}

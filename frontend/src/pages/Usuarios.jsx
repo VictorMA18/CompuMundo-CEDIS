@@ -70,7 +70,7 @@ export default function Usuarios() {
           <option value="Consultor">Consultor</option>
         </select>
 
-        <button className="btn" onClick={() => openModal("new")}>
+        <button className="btn-new" onClick={() => openModal("new")}>
           ➕ Registrar
         </button>
       </div>

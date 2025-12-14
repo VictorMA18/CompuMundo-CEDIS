@@ -49,4 +49,19 @@
   padding: 20px;
   overflow-y: auto;
 }
+.page-title {
+  padding: 20px;
+}
+
+.page-title h1 {
+  margin: 0;
+  font-size: 26px;
+  color: black;
+}
+.page-content {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 20px; /* Puedes ajustar */
+  box-sizing: border-box;
+}
 

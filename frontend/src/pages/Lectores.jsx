@@ -58,7 +58,7 @@ export default function Lectores() {
           <option value="Docente">Docente</option>
           <option value="Administrativo">Administrativo</option>
         </select>
-        <button className="btn" onClick={() => openModal("new")}>➕ Nuevo</button>
+        <button className="btn-new" onClick={() => openModal("new")}>➕ Nuevo</button>
       </div>
 
       {/* Tabla */}

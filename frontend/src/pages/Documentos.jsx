@@ -51,7 +51,7 @@ export default function Documentos() {
           <option>Revista</option>
         </select>
 
-        <button className="btn" onClick={() => setModal("create")}>
+        <button className="btn-new" onClick={() => setModal("create")}>
           ➕ Registrar
         </button>
       </div>

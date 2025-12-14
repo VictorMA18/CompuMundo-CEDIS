@@ -60,7 +60,7 @@ export default function Prestamos() {
           <option value="Vencido">Vencido</option>
           <option value="Devuelto">Devuelto</option>
         </select>
-        <button className="btn" onClick={() => openModal("new")}>➕ Nuevo</button>
+        <button className="btn-new" onClick={() => openModal("new")}>➕ Nuevo</button>
       </div>
 
       {/* Tabla */}
