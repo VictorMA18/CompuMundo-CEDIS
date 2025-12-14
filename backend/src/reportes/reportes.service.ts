@@ -156,7 +156,7 @@ export class ReportesService {
       const prev = map.get(key) ?? {
         nombres: `${l.LecNom} ${l.LecApe}`,
         dni: l.LecDni,
-        correo: l.LecCor ?? 'S/C',
+        correo: l.LecEma ?? 'S/C',
         numeroPrestamos: 0,
       };
       prev.numeroPrestamos += 1;
