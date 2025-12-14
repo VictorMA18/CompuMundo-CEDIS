@@ -4,6 +4,7 @@ import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import * as bcrypt from 'bcrypt';
 import { IUsuario } from './interface/usuario.interface';
+import { Prisma } from '@prisma/client';
 
 const usuarioSelect = {
   UsuId: true,
@@ -19,29 +20,41 @@ const usuarioSelect = {
 export class UsuariosService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: CreateUsuarioDto): Promise<IUsuario> {
-    const exists = await this.prisma.tB_USUARIO.findUnique({
-      where: { UsuEma: data.UsuEma },
-      select: usuarioSelect,
-    });
-    if (exists) {
-      if (exists.UsuAct) {
-        throw new BadRequestException('El email ya está registrado');
-      } else {
-        throw new BadRequestException('El email ya existe pero está desactivado. Debe reactivarse.');
-      }
+  private async withTransaction<T>(
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+    prismaClient: PrismaService | Prisma.TransactionClient = this.prisma
+  ): Promise<T> {
+    if ('$transaction' in prismaClient) {
+      return (prismaClient as PrismaService).$transaction(fn);
     }
+    return fn(prismaClient as Prisma.TransactionClient);
+  }
 
-    const hashed = await bcrypt.hash(data.UsuCon, 10);
-    const payload = {
-      UsuNom: data.UsuNom,
-      UsuEma: data.UsuEma,
-      UsuCon: hashed,
-      UsuTip: data.UsuTip,
-      UsuAct: true,
-    };
+  async create(data: CreateUsuarioDto, prismaClient: PrismaService | Prisma.TransactionClient = this.prisma): Promise<IUsuario> {
+    return this.withTransaction(async (tx) => {
+      const exists = await tx.tB_USUARIO.findUnique({
+        where: { UsuEma: data.UsuEma },
+        select: usuarioSelect,
+      });
+      if (exists) {
+        if (exists.UsuAct) {
+          throw new BadRequestException('El email ya está registrado');
+        } else {
+          throw new BadRequestException('El email ya existe pero está desactivado. Debe reactivarse.');
+        }
+      }
 
-    return this.prisma.tB_USUARIO.create({ data: payload, select: usuarioSelect });
+      const hashed = await bcrypt.hash(data.UsuCon, 10);
+      const payload = {
+        UsuNom: data.UsuNom,
+        UsuEma: data.UsuEma,
+        UsuCon: hashed,
+        UsuTip: data.UsuTip,
+        UsuAct: true,
+      };
+
+      return tx.tB_USUARIO.create({ data: payload, select: usuarioSelect });
+    }, prismaClient);
   }
 
   async findAll(): Promise<IUsuario[]> {
@@ -60,8 +73,8 @@ export class UsuariosService {
     });
   }
 
-  async findOne(id: number): Promise<IUsuario> {
-    const usuario = await this.prisma.tB_USUARIO.findUnique({
+  async findOne(id: number, prismaClient: PrismaService | Prisma.TransactionClient = this.prisma): Promise<IUsuario> {
+    const usuario = await prismaClient.tB_USUARIO.findUnique({
       where: { UsuId: id },
       select: usuarioSelect,
     });
@@ -70,60 +83,69 @@ export class UsuariosService {
     return usuario;
   }
 
-  async findByEmail(email: string): Promise<IUsuario | null> {
-    return this.prisma.tB_USUARIO.findUnique({ where: { UsuEma: email } });
-  }
-
-  async findOneByEmail(email: string): Promise<IUsuario> {
-      const usuario = await this.prisma.tB_USUARIO.findUnique({
-        where: { UsuEma: email },
-        select: usuarioSelect,
-      });
-      if (!usuario) throw new NotFoundException('Usuario no encontrado');
-      if (!usuario.UsuAct) throw new BadRequestException('El usuario está desactivado');
-      return usuario;
-    }
-
-  async update(id: number, data: UpdateUsuarioDto): Promise<IUsuario> {
-    await this.findOne(id);
-
-    if (data.UsuCon) {
-      data.UsuCon = await bcrypt.hash(data.UsuCon, 10);
-    }
-    return this.prisma.tB_USUARIO.update({
-      where: { UsuId: id },
-      data,
-      select: usuarioSelect,
-    });
-  }
-
-  async reactivar(id: number): Promise<IUsuario> {
-    const usuario = await this.prisma.tB_USUARIO.findUnique({
-      where: { UsuId: id },
+  async findOneByEmail(email: string, prismaClient: PrismaService | Prisma.TransactionClient = this.prisma): Promise<IUsuario> {
+    const usuario = await prismaClient.tB_USUARIO.findUnique({
+      where: { UsuEma: email },
       select: usuarioSelect,
     });
     if (!usuario) throw new NotFoundException('Usuario no encontrado');
-    if (usuario.UsuAct) throw new BadRequestException('El usuario ya está activo');
-
-    return this.prisma.tB_USUARIO.update({
-      where: { UsuId: id },
-      data: { UsuAct: true },
-      select: usuarioSelect,
-    });
+    if (!usuario.UsuAct) throw new BadRequestException('El usuario está desactivado');
+    return usuario;
   }
 
-  async remove(id: number): Promise<IUsuario> {
-    const usuario = await this.findOne(id);
+  async update(id: number, data: UpdateUsuarioDto, prismaClient: PrismaService | Prisma.TransactionClient = this.prisma): Promise<IUsuario> {
+    return this.withTransaction(async (tx) => {
+      await this.findOne(id, tx);
 
-    // No permitir desactivar al usuario administrador principal
-    if (usuario.UsuEma === 'admin@admin.com') {
-      throw new BadRequestException('No se puede desactivar al usuario administrador principal.');
-    }
+      if (data.UsuEma) {
+        const emailExists = await tx.tB_USUARIO.findFirst({
+          where: { UsuEma: data.UsuEma, UsuId: { not: id } },
+          select: { UsuId: true },
+        });
+        if (emailExists) throw new BadRequestException('El email ya está en uso por otro usuario.');
+      }
 
-    return this.prisma.tB_USUARIO.update({
-      where: { UsuId: id },
-      data: { UsuAct: false },
-      select: usuarioSelect,
-    });
+      if (data.UsuCon) {
+        data.UsuCon = await bcrypt.hash(data.UsuCon, 10);
+      }
+      return tx.tB_USUARIO.update({
+        where: { UsuId: id },
+        data,
+        select: usuarioSelect,
+      });
+    }, prismaClient);
+  }
+
+  async reactivar(id: number, prismaClient: PrismaService | Prisma.TransactionClient = this.prisma): Promise<IUsuario> {
+    return this.withTransaction(async (tx) => {
+      const usuario = await tx.tB_USUARIO.findUnique({
+        where: { UsuId: id },
+        select: usuarioSelect,
+      });
+      if (!usuario) throw new NotFoundException('Usuario no encontrado');
+      if (usuario.UsuAct) throw new BadRequestException('El usuario ya está activo');
+
+      return tx.tB_USUARIO.update({
+        where: { UsuId: id },
+        data: { UsuAct: true },
+        select: usuarioSelect,
+      });
+    }, prismaClient);
+  }
+
+  async remove(id: number, prismaClient: PrismaService | Prisma.TransactionClient = this.prisma): Promise<IUsuario> {
+    return this.withTransaction(async (tx) => {
+      const usuario = await this.findOne(id, tx);
+
+      if (usuario.UsuEma === 'admin@admin.com') {
+        throw new BadRequestException('No se puede desactivar al usuario administrador principal.');
+      }
+
+      return tx.tB_USUARIO.update({
+        where: { UsuId: id },
+        data: { UsuAct: false },
+        select: usuarioSelect,
+      });
+    }, prismaClient);
   }
 }
