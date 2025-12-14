@@ -1,10 +1,16 @@
-import { Link, useLocation } from "react-router-dom";
-import { useAuth } from  "../context/AuthContext"; 
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import "./Sidebar.css";
 
 export default function AdminSidebar() {
   const { pathname } = useLocation();
-  const { user } = useAuth(); // Obtenemos el rol del usuario
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   const menu = [
     { label: "Dashboard", path: "/admin", icon: "🏠" },
@@ -16,12 +22,14 @@ export default function AdminSidebar() {
 
   return (
     <div className="sidebar">
+      {/* USUARIO */}
       <div className="user-box">
-        <div className="avatar">JG</div>
+        <div className="avatar">AD</div>
         <p className="username">{user?.email}</p>
         <p className="role">Administrador</p>
       </div>
 
+      {/* MENÚ */}
       <nav className="menu">
         {menu.map((item) => (
           <Link
@@ -35,7 +43,10 @@ export default function AdminSidebar() {
         ))}
       </nav>
 
-      <button className="logout">⏻ Cerrar sesión</button>
+      {/* LOGOUT */}
+      <button className="logout-btn" onClick={handleLogout}>
+        ⏻ Cerrar sesión
+      </button>
     </div>
   );
 }

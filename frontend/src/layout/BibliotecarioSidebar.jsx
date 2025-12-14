@@ -1,12 +1,18 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useState } from "react";
 import "./Sidebar.css";
 
 export default function BibliotecarioSidebar() {
   const { pathname } = useLocation();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [openConfig, setOpenConfig] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   const menu = [
     { label: "Dashboard", path: "/bibliotecario", icon: "🏠" },
@@ -26,12 +32,16 @@ export default function BibliotecarioSidebar() {
 
   return (
     <div className="sidebar">
+      {/* USUARIO */}
       <div className="user-box">
         <div className="avatar">BL</div>
-        <p className="username">{user?.email}</p>
-        <p className="role">Bibliotecario</p>
+        <div className="user-info">
+          <p className="username">{user?.username}</p>
+          <p className="role">Bibliotecario</p>
+        </div>
       </div>
 
+      {/* MENÚ */}
       <nav className="menu">
         {menu.map((item) =>
           item.children ? (
@@ -52,7 +62,9 @@ export default function BibliotecarioSidebar() {
                       key={sub.path}
                       to={sub.path}
                       className={
-                        pathname === sub.path ? "active sub-item" : "sub-item"
+                        pathname === sub.path
+                          ? "active sub-item"
+                          : "sub-item"
                       }
                     >
                       {sub.label}
@@ -73,6 +85,11 @@ export default function BibliotecarioSidebar() {
           )
         )}
       </nav>
+
+      {/* LOGOUT */}
+      <button className="logout-btn" onClick={handleLogout}>
+        ⏻ Cerrar sesión
+      </button>
     </div>
   );
 }

@@ -1,43 +1,48 @@
 .sidebar {
-  display: block;
   width: 350px;
-  height: 100vh;     
-  background: #a80000;
-  padding: 20px 10px;
+  background: #8b0000;
   color: white;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
-  overflow-y: auto;   
+  height: 100%;
+  padding-top: 15px;
 }
+
 
 .user-box {
-  text-align: center;
-  margin-bottom: 25px;
-}
+  display: flex;
+  align-items: center;
+  gap: 12px;
 
+  padding: 15px 18px;
+  margin-bottom: 20px;
+}
 .avatar {
-  width: 55px;
-  height: 55px;
+  width: 48px;
+  height: 48px;
   background: white;
   color: #a80000;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  margin: auto;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: bold;
+  flex-shrink: 0;
 }
+.user-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
 
 .username {
-  margin: 10px 0 0;
-  font-weight: bold;
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+  color: white;
 }
 
-.role {
-  opacity: 0.8;
-  font-size: 14px;
-}
 
 .menu {
   display: flex;
@@ -109,6 +114,22 @@
 
 .arrow.open {
   transform: rotate(180deg);
+}
+.logout-btn {
+  margin: 20px;
+  padding: 10px;
+  background: #a80000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.logout-btn:hover {
+  background: #8f0000;
 }
 
 

@@ -7,7 +7,7 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
 
   const handleChange = (e) =>
@@ -15,49 +15,73 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { success, message } = await login(form);
+
+    const { success, user, message } = await login(form);
 
     if (success) {
-      if (user.role === "admin") {
-        navigate("/admin");
-      } else if (user.role === "bibliotecario") {
-        navigate("/bibliotecario");
-      }
+      if (user.role === "admin") navigate("/admin");
+      if (user.role === "bibliotecario") navigate("/bibliotecario");
+    } else {
+      setError(message);
     }
-
   };
 
   return (
     <div className="login-container">
-      <form className="login-card" onSubmit={handleSubmit}>
-        <h2 className="login-title">Iniciar Sesión</h2>
+      <div className="login-card">
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Correo"
-          value={form.email}
-          onChange={handleChange}
-          required
-          className="login-input"
-        />
+        {/* LOGO */}
+        <div className="login-header">
+          <div className="logo-placeholder">
+            {/* AQUÍ VA TU IMAGEN */}
+          </div>
+          <h2>Centro de Documentación</h2>
+          <p>Ingeniería de Sistemas</p>
+        </div>
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Contraseña"
-          value={form.password}
-          onChange={handleChange}
-          required
-          className="login-input"
-        />
+        <form onSubmit={handleSubmit}>
+          {/* USUARIO */}
+          <div className="input-group">
+            <span className="icon">👤</span>
+            <input
+              type="text"
+              name="username"
+              placeholder="Nombre de usuario"
+              value={form.username}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-        {error && <p className="login-error">{error}</p>}
+          {/* CONTRASEÑA */}
+          <div className="input-group">
+            <span className="icon">🔒</span>
+            <input
+              type="password"
+              name="password"
+              placeholder="Contraseña"
+              value={form.password}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-        <button type="submit" className="login-button">
-          Ingresar
-        </button>
-      </form>
+          {error && <p className="login-error">{error}</p>}
+
+          <button type="submit" className="btn primary">
+            Iniciar sesión
+          </button>
+
+          <button
+            type="button"
+            className="btn secondary"
+            onClick={() => navigate("/catalogo")}
+          >
+            Ver catálogo
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
+

@@ -8,7 +8,7 @@ import Lectores from "../pages/Lectores";
 import Documentos from "../pages/Documentos";
 import Usuarios from "../pages/Usuarios";
 import Categorias from "../pages/Categorias";
-
+import Catalogo from "../pages/Catalogo";
 
 export default function AppRouter() {
   return (
@@ -16,6 +16,7 @@ export default function AppRouter() {
 
       {/* Ruta inicial */}
       <Route path="/" element={<Navigate to="/login" />} />
+      <Route path="/catalogo" element={<Catalogo />} />
 
       {/* Login */}
       <Route path="/login" element={<Login />} />

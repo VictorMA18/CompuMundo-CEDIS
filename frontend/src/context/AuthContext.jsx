@@ -5,23 +5,37 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
-  const login = async ({ email, password }) => {
-    if (email === "admin@unsa.edu.pe" && password === "21") {
-      const userData = { email, role: "admin" };
+  const login = async ({ username, password }) => {
+    // ADMINISTRADOR
+    if (username === "admin" && password === "21") {
+      const userData = {
+        username,
+        role: "admin",
+      };
       setUser(userData);
       return { success: true, user: userData };
     }
 
-    if (email === "biblio@unsa.edu.pe" && password === "21") {
-      const userData = { email, role: "bibliotecario" };
+    // BIBLIOTECARIO
+    if (username === "bibliotecario" && password === "21") {
+      const userData = {
+        username,
+        role: "bibliotecario",
+      };
       setUser(userData);
       return { success: true, user: userData };
     }
 
-    return { success: false, message: "Credenciales incorrectas" };
+    // ERROR
+    return {
+      success: false,
+      message: "Usuario o contraseña incorrectos",
+    };
   };
 
-  const logout = () => setUser(null);
+  const logout = () => {
+    setUser(null);
+  };
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
