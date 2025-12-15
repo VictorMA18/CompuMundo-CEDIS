@@ -1,259 +1,378 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import type { UsuTip } from '../../types/auth';
-import type { Usuario, UsuarioForm, UsuarioView } from '../../types/usuario';
-import './AdminCrud.css';
+import { useEffect, useMemo, useState } from "react";
+import { useOutletContext } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import type { UsuTip } from "../../types/auth";
+import type { Usuario } from "../../types/usuario";
+import "./AdminCrud.css";
 
-type ApiError = { message?: string | string[] };
-
-function errorMessage(data: unknown, fallback: string) {
-  const err = data as ApiError;
-  if (Array.isArray(err?.message)) return err.message.join(', ');
-  if (typeof err?.message === 'string' && err.message.trim()) return err.message;
-  return fallback;
-}
-
-const roles: UsuTip[] = ['administrador', 'bibliotecario', 'consultor'];
-
-export default function Usuarios() {
-  const setTitle = useOutletContext<((title: string) => void) | undefined>();
-  const { authFetch } = useAuth();
-
-  const [view, setView] = useState<UsuarioView>('activos');
-  const [items, setItems] = useState<Usuario[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [editing, setEditing] = useState<Usuario | null>(null);
-  const [form, setForm] = useState<UsuarioForm>({ UsuNom: '', UsuEma: '', UsuTip: 'consultor', UsuCon: '' });
+/* ================= FORMULARIO ================= */
+function UsuarioForm({
+  initial,
+  onSave,
+  onCancel,
+}: {
+  initial: Usuario | null;
+  onSave: (data: any) => void;
+  onCancel: () => void;
+}) {
+  const [form, setForm] = useState({
+    UsuNom: "",
+    UsuEma: "",
+    UsuTip: "consultor" as UsuTip,
+    UsuCon: "",
+  });
 
   useEffect(() => {
-    setTitle?.('Usuarios');
-  }, [setTitle]);
+    if (!initial) return;
+    setForm({
+      UsuNom: initial.UsuNom,
+      UsuEma: initial.UsuEma,
+      UsuTip: initial.UsuTip,
+      UsuCon: "",
+    });
+  }, [initial]);
 
-  useEffect(() => {
-    if (!editing) {
-      setForm({ UsuNom: '', UsuEma: '', UsuTip: 'consultor', UsuCon: '' });
-      return;
-    }
-    setForm({ UsuNom: editing.UsuNom, UsuEma: editing.UsuEma, UsuTip: editing.UsuTip, UsuCon: '' });
-  }, [editing]);
+  const submit = () => {
+    if (!form.UsuNom || !form.UsuEma) return;
 
-  const endpoints = useMemo(
-    () => [
-      { method: 'GET', path: '/api/usuarios', note: 'Listar activos' },
-      { method: 'GET', path: '/api/usuarios/desactivados', note: 'Listar desactivados (solo admin)' },
-      { method: 'GET', path: '/api/usuarios/:id', note: 'Detalle' },
-      { method: 'POST', path: '/api/usuarios', note: 'Crear (solo admin)' },
-      { method: 'PATCH', path: '/api/usuarios/:id', note: 'Editar (solo admin)' },
-      { method: 'PATCH', path: '/api/usuarios/reactivar/:id', note: 'Reactivar (solo admin)' },
-      { method: 'DELETE', path: '/api/usuarios/:id', note: 'Desactivar (solo admin)' },
-    ],
-    [],
-  );
-
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-
-    const listUrl = view === 'activos' ? '/api/usuarios' : '/api/usuarios/desactivados';
-    const res = await authFetch(listUrl);
-    const data: unknown = await res.json().catch(() => ([] as unknown));
-
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo cargar usuarios'));
-      setItems([]);
-      setLoading(false);
-      return;
-    }
-
-    setItems(Array.isArray(data) ? (data as Usuario[]) : []);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
-
-  const submit = async () => {
-    setLoading(true);
-    setError(null);
-
-    const basePayload: Record<string, unknown> = {
+    const payload: any = {
       UsuNom: form.UsuNom.trim(),
       UsuEma: form.UsuEma.trim(),
       UsuTip: form.UsuTip,
     };
 
-    if (!editing) {
-      basePayload.UsuCon = form.UsuCon;
-    } else if (form.UsuCon.trim()) {
-      basePayload.UsuCon = form.UsuCon;
+    if (!initial || form.UsuCon.trim()) {
+      payload.UsuCon = form.UsuCon;
     }
 
-    const url = editing ? `/api/usuarios/${editing.UsuId}` : '/api/usuarios';
-    const method = editing ? 'PATCH' : 'POST';
-
-    const res = await authFetch(url, { method, body: JSON.stringify(basePayload) });
-    const data: unknown = await res.json().catch(() => ({} as unknown));
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo guardar el usuario'));
-      setLoading(false);
-      return;
-    }
-
-    setEditing(null);
-    setForm({ UsuNom: '', UsuEma: '', UsuTip: 'consultor', UsuCon: '' });
-    await load();
-  };
-
-  const deactivate = async (id: number) => {
-    setLoading(true);
-    setError(null);
-    const res = await authFetch(`/api/usuarios/${id}`, { method: 'DELETE' });
-    const data: unknown = await res.json().catch(() => ({} as unknown));
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo desactivar el usuario'));
-      setLoading(false);
-      return;
-    }
-    await load();
-  };
-
-  const reactivate = async (id: number) => {
-    setLoading(true);
-    setError(null);
-    const res = await authFetch(`/api/usuarios/reactivar/${id}`, { method: 'PATCH' });
-    const data: unknown = await res.json().catch(() => ({} as unknown));
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo reactivar el usuario'));
-      setLoading(false);
-      return;
-    }
-    await load();
+    onSave(payload);
   };
 
   return (
     <>
-      {error && <div className="error">{error}</div>}
+      <h3>{initial ? "Editar usuario" : "Registrar usuario"}</h3>
 
-      <div className="filters-card">
-        <select className="input" value={view} onChange={(e) => setView(e.target.value as UsuarioView)} disabled={loading}>
-          <option value="activos">Activos</option>
-          <option value="desactivados">Desactivados</option>
-        </select>
-
+      <div className="form-grid">
         <input
-          className="input"
-          placeholder="Nombre (UsuNom)"
+          placeholder="Nombre"
           value={form.UsuNom}
-          onChange={(e) => setForm((f) => ({ ...f, UsuNom: e.target.value }))}
-          disabled={loading || view === 'desactivados'}
+          onChange={(e) => setForm({ ...form, UsuNom: e.target.value })}
         />
         <input
-          className="input"
-          placeholder="Correo (UsuEma)"
+          placeholder="Correo"
           value={form.UsuEma}
-          onChange={(e) => setForm((f) => ({ ...f, UsuEma: e.target.value }))}
-          disabled={loading || view === 'desactivados'}
+          onChange={(e) => setForm({ ...form, UsuEma: e.target.value })}
         />
         <select
-          className="input"
           value={form.UsuTip}
-          onChange={(e) => setForm((f) => ({ ...f, UsuTip: e.target.value as UsuTip }))}
-          disabled={loading || view === 'desactivados'}
+          onChange={(e) => setForm({ ...form, UsuTip: e.target.value as UsuTip })}
         >
-          {roles.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
+          <option value="administrador">Administrador</option>
+          <option value="bibliotecario">Bibliotecario</option>
+          <option value="consultor">Consultor</option>
         </select>
         <input
-          className="input"
           type="password"
-          placeholder={editing ? 'Nueva contraseña (opcional)' : 'Contraseña (UsuCon)'}
+          placeholder={initial ? "Nueva contraseña (opcional)" : "Contraseña"}
           value={form.UsuCon}
-          onChange={(e) => setForm((f) => ({ ...f, UsuCon: e.target.value }))}
-          disabled={loading || view === 'desactivados'}
+          onChange={(e) => setForm({ ...form, UsuCon: e.target.value })}
         />
-
-        <button className="btn" onClick={() => void submit()} disabled={loading || view === 'desactivados'}>
-          {editing ? 'Guardar' : 'Crear'}
-        </button>
-
-        {editing && (
-          <button className="btn secondary" onClick={() => setEditing(null)} disabled={loading}>
-            Cancelar
-          </button>
-        )}
       </div>
 
-      <div className="notice">
-        Algunas rutas son solo admin (por ejemplo: desactivados/crear/editar/reactivar/desactivar).
-      </div>
-
-      <div className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Correo</th>
-              <th>Rol</th>
-              <th>Activo</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((u) => (
-              <tr key={u.UsuId}>
-                <td>{u.UsuId}</td>
-                <td>{u.UsuNom}</td>
-                <td>{u.UsuEma}</td>
-                <td>{u.UsuTip}</td>
-                <td>{u.UsuAct ? 'Sí' : 'No'}</td>
-                <td className="actions">
-                  <button
-                    title="Editar"
-                    onClick={() => setEditing(u)}
-                    disabled={loading || view === 'desactivados'}
-                  >
-                    ✏️
-                  </button>
-                  {view === 'activos' ? (
-                    <button title="Desactivar" onClick={() => void deactivate(u.UsuId)} disabled={loading}>
-                      🗑️
-                    </button>
-                  ) : (
-                    <button title="Reactivar" onClick={() => void reactivate(u.UsuId)} disabled={loading}>
-                      ♻️
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {!loading && items.length === 0 && (
-              <tr>
-                <td colSpan={6}>Sin registros</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="endpoints">
-        <h3>Endpoints</h3>
-        {endpoints.map((e) => (
-          <div className="endpoint-row" key={`${e.method}-${e.path}`}>
-            <span className={`badge ${e.method.toLowerCase()}`}>{e.method}</span>
-            <span className="code">{e.path}</span>
-            <span style={{ marginLeft: 'auto', color: '#555' }}>{e.note}</span>
-          </div>
-        ))}
+      <div className="modal-actions">
+        <button className="btn" onClick={submit}>Guardar</button>
+        <button className="btn secondary" onClick={onCancel}>Cancelar</button>
       </div>
     </>
   );
 }
+
+/* ================= COMPONENTE PRINCIPAL ================= */
+export default function Usuarios() {
+  const setTitle = useOutletContext<(title: string) => void>();
+  const { authFetch } = useAuth();
+
+  useEffect(() => {
+    setTitle?.("Usuarios");
+  }, [setTitle]);
+
+  /* ===== ESTADO ===== */
+  const [items, setItems] = useState<Usuario[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // filtros
+  const [search, setSearch] = useState("");
+  const [rol, setRol] = useState("");
+  const [view, setView] = useState<"activos" | "desactivados">("activos");
+
+  // modales
+  const [modal, setModal] =
+    useState<null | "view" | "edit" | "new" | "delete" | "reactivate">(null);
+  const [selected, setSelected] = useState<Usuario | null>(null);
+
+  // paginación
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  /* ===== LOAD ===== */
+  const load = async () => {
+    setLoading(true);
+    try {
+      const url =
+        view === "activos"
+          ? "/api/usuarios"
+          : "/api/usuarios/desactivados";
+
+      const res = await authFetch(url);
+      const data = await res.json();
+      setItems(Array.isArray(data) ? data : []);
+    } catch {
+      setError("No se pudo cargar usuarios");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, [view]);
+
+  // reset página
+  useEffect(() => {
+    setPage(1);
+  }, [search, rol, pageSize]);
+
+  /* ===== FILTROS ===== */
+  const filteredItems = useMemo(() => {
+    return items.filter((u) => {
+      const matchText =
+        u.UsuNom.toLowerCase().includes(search.toLowerCase()) ||
+        u.UsuEma.toLowerCase().includes(search.toLowerCase());
+
+      const matchRol = rol ? u.UsuTip === rol : true;
+
+      return matchText && matchRol;
+    });
+  }, [items, search, rol]);
+
+  /* ===== PAGINACIÓN ===== */
+  const totalPages = Math.ceil(filteredItems.length / pageSize);
+
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, page, pageSize]);
+
+  /* ===== CRUD ===== */
+  const save = async (payload: any) => {
+    const isEdit = modal === "edit" && selected;
+
+    const method = isEdit ? "PATCH" : "POST";
+    const url = isEdit
+      ? `/api/usuarios/${selected!.UsuId}`
+      : "/api/usuarios";
+
+    await authFetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    setModal(null);
+    setSelected(null);
+    await load();
+  };
+
+  const deactivate = async () => {
+    if (!selected) return;
+    await authFetch(`/api/usuarios/${selected.UsuId}`, { method: "DELETE" });
+    setModal(null);
+    setSelected(null);
+    await load();
+  };
+
+  const reactivate = async () => {
+    if (!selected) return;
+    await authFetch(`/api/usuarios/reactivar/${selected.UsuId}`, {
+      method: "PATCH",
+    });
+    setModal(null);
+    setSelected(null);
+    await load();
+  };
+
+  /* ===== UI ===== */
+  return (
+    <>
+      {error && <div className="error">{error}</div>}
+
+      {/* ===== FILTROS ===== */}
+      <div className="filters-card">
+        <h3 className="card-title">Filtros</h3>
+
+        <input
+          className="input"
+          placeholder="Buscar por nombre o correo"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <select
+          className="input"
+          value={rol}
+          onChange={(e) => setRol(e.target.value)}
+        >
+          <option value="">Todos los roles</option>
+          <option value="administrador">Administrador</option>
+          <option value="bibliotecario">Bibliotecario</option>
+          <option value="consultor">Consultor</option>
+        </select>
+
+        <select
+          className="input"
+          value={view}
+          onChange={(e) => setView(e.target.value as any)}
+        >
+          <option value="activos">Activos</option>
+          <option value="desactivados">Desactivados</option>
+        </select>
+
+        <button
+          className="btn-new"
+          onClick={() => {
+            setSelected(null);
+            setModal("new");
+          }}
+        >
+          ➕ Nuevo
+        </button>
+      </div>
+
+      {/* ===== TABLA ===== */}
+      <div className="table-card">
+        <h3 className="card-title">Listado de Usuarios</h3>
+
+        <div className="table-toolbar">
+          <span>Mostrar</span>
+          <select
+            className="input-small"
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+          </select>
+          <span>registros</span>
+        </div>
+
+        <div className="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th>Activo</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedItems.map((u, i) => (
+                <tr key={u.UsuId}>
+                  <td>{(page - 1) * pageSize + i + 1}</td>
+                  <td>{u.UsuNom}</td>
+                  <td>{u.UsuEma}</td>
+                  <td>{u.UsuTip}</td>
+                  <td>{u.UsuAct ? "Sí" : "No"}</td>
+                  <td className="actions">
+                    <button onClick={() => { setSelected(u); setModal("view"); }}>👁️</button>
+                    <button onClick={() => { setSelected(u); setModal("edit"); }}>✏️</button>
+                    {view === "activos" ? (
+                      <button onClick={() => { setSelected(u); setModal("delete"); }}>🗑️</button>
+                    ) : (
+                      <button onClick={() => { setSelected(u); setModal("reactivate"); }}>♻️</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+
+              {!loading && paginatedItems.length === 0 && (
+                <tr>
+                  <td colSpan={6}>Sin registros</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ===== PAGINACIÓN ===== */}
+      <div className="pagination">
+        <button
+          className="btn-secondary"
+          disabled={page === 1}
+          onClick={() => setPage((p) => p - 1)}
+        >
+          ⬅ Anterior
+        </button>
+
+        <span>Página {page} de {totalPages || 1}</span>
+
+        <button
+          className="btn-secondary"
+          disabled={page === totalPages || totalPages === 0}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          Siguiente ➡
+        </button>
+      </div>
+
+      {/* ===== MODALES ===== */}
+      {modal && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            {modal === "view" && selected && (
+              <>
+                <h3>Detalle del usuario</h3>
+                <p><b>Nombre:</b> {selected.UsuNom}</p>
+                <p><b>Correo:</b> {selected.UsuEma}</p>
+                <p><b>Rol:</b> {selected.UsuTip}</p>
+                <p><b>Activo:</b> {selected.UsuAct ? "Sí" : "No"}</p>
+                <button className="btn" onClick={() => setModal(null)}>Cerrar</button>
+              </>
+            )}
+
+            {(modal === "new" || modal === "edit") && (
+              <UsuarioForm
+                initial={modal === "edit" ? selected : null}
+                onSave={save}
+                onCancel={() => setModal(null)}
+              />
+            )}
+
+            {modal === "delete" && (
+              <>
+                <h3>¿Desactivar usuario?</h3>
+                <p>El usuario no podrá acceder al sistema</p>
+                <button className="btn danger" onClick={deactivate}>Desactivar</button>
+                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+              </>
+            )}
+
+            {modal === "reactivate" && (
+              <>
+                <h3>¿Reactivar usuario?</h3>
+                <button className="btn" onClick={reactivate}>Reactivar</button>
+                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
