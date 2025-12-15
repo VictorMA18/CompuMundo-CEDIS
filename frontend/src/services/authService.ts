@@ -1,6 +1,5 @@
 import type { LoginResponse } from '../types/auth';
-
-const API_URL = '/api';
+import { apiUrl } from '../config/apiUrl';
 
 type LoginSuccess = { success: true; data: LoginResponse };
 type LoginFailure = { success: false; error: string };
@@ -24,7 +23,7 @@ function isLoginResponse(data: unknown): data is LoginResponse {
 
 export async function loginUser(email: string, password: string): Promise<LoginSuccess | LoginFailure> {
   try {
-    const res = await fetch(`${API_URL}/auth/login`, {
+    const res = await fetch(apiUrl(`/api/auth/login`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ UsuEma: email, UsuCon: password }),

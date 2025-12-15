@@ -10,17 +10,25 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   app.useGlobalInterceptors(new TimeoutInterceptor());
-
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  app.enableCors();
+  const corsOriginEnv = process.env.CORS_ORIGIN;
+  const origins =
+    corsOriginEnv?.split(',').map((s) => s.trim()).filter(Boolean);
+
+  app.enableCors({
+    origin: origins?.length ? origins : true, // si no hay env, permite todos (útil al inicio)
+    credentials: true,
+  });
 
   // Configuración de Swagger
   const config = new DocumentBuilder()
@@ -29,8 +37,9 @@ async function bootstrap() {
     .setVersion('1.0')
     .addBearerAuth()
     .build();
+
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document); // Documentación en /api/docs
+  SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(process.env.PORT ?? 3000);
 }

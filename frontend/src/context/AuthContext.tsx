@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { AuthUser } from '../types/auth';
+import { apiUrl } from '../config/apiUrl';
 
 type JwtPayload = {
   exp?: number;
@@ -71,19 +72,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const authFetch = async (url: string, options: RequestInit = {}) => {
     const headers = new Headers(options.headers || {});
-
     if (options.body && !headers.has('Content-Type')) {
       headers.set('Content-Type', 'application/json');
     }
+    if (token) headers.set('Authorization', `Bearer ${token}`);
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-
-    const response = await fetch(url, { ...options, headers });
+    const response = await fetch(apiUrl(url), { ...options, headers });
 
     if (response.status === 401) {
       logout();
+      window.location.href = '/login';
     }
 
     return response;
