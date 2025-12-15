@@ -93,28 +93,43 @@ export class ReportesService {
   }
 
   // ========== REQ-23: Reporte de Documentos Pendientes ==========
+  // src/reportes/reportes.service.ts
+
   async getReportePendientes(filtros?: { inicio?: string; fin?: string; intervalo?: IntervaloTiempo }) {
     const rango = this.buildDateRange(filtros?.inicio, filtros?.fin, filtros?.intervalo);
 
+    // Construimos el filtro dinámicamente
+    const whereInput: any = {
+      OR: [
+        { PreEst: 'VIGENTE' },
+        { PreEst: 'VENCIDO' }
+      ]
+    };
+
+    // CORRECCIÓN: Si hay rango de fechas, filtramos a través de la relación 'prestamo'
+    if (rango) {
+      whereInput.prestamo = {
+        PreFecPre: rango
+      };
+    }
+
     const pendientes = await this.prisma.tB_PRESTAMO_DETALLE.findMany({
-      where: {
-        OR: [{ PreEst: 'VIGENTE' }, { PreEst: 'VENCIDO' }],
-        ...(rango ? { PreFecPre: rango } : {}),
-      },
+      where: whereInput, // Usamos el objeto corregido
       include: {
         materialBibliografico: true,
         prestamo: {
-          include: { lector: true },
-        },
-      },
+          include: { lector: true }
+        }
+      }
     });
 
-    return pendientes.map((detalle) => ({
-      titulo: detalle.materialBibliografico.MatBibTit,
-      codigo: detalle.materialBibliografico.MatBibCod || 'S/C',
-      lector: `${detalle.prestamo.lector.LecNom} ${detalle.prestamo.lector.LecApe}`,
-      fechaVencimiento: detalle.PreFecVen,
-      estado: detalle.PreEst,
+    return pendientes.map(detalle => ({
+        titulo: detalle.materialBibliografico?.MatBibTit || 'Sin Título',
+        codigo: detalle.materialBibliografico?.MatBibCod || 'S/C',
+        lector: `${detalle.prestamo.lector.LecNom} ${detalle.prestamo.lector.LecApe}`,
+        fechaPrestamo: detalle.prestamo.PreFecPre, // Agregado para referencia
+        fechaVencimiento: detalle.PreFecVen,
+        estado: detalle.PreEst
     }));
   }
 

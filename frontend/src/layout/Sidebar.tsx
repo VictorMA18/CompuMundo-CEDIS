@@ -22,6 +22,7 @@ export default function Sidebar() {
     { label: 'Material virtual', path: '/app/material-virtual', icon: '💾' },
     { label: 'Usuarios', path: '/app/usuarios', icon: '👤' },
     { label: 'Categorías', path: '/app/configuracion/categorias', icon: '🏷️' },
+    { label: 'Reportes', path: '/app/reportes', icon: '📑' },
   ];
 
   return (
