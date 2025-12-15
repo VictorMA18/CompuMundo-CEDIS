@@ -300,7 +300,26 @@ export default function MaterialVirtualPage() {
         </div>
       </div>
 
+      {/* ===== PAGINACIÓN ===== */}
+      <div className="pagination">
+        <button
+          className="btn-secondary"
+          disabled={page === 1}
+          onClick={() => setPage((p) => p - 1)}
+        >
+          ⬅ Anterior
+        </button>
 
+        <span>Página {page} de {totalPages || 1}</span>
+
+        <button
+          className="btn-secondary"
+          disabled={page === totalPages || totalPages === 0}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          Siguiente ➡
+        </button>
+      </div>
       {/* ===== MODALES ===== */}
       {modal && (
         <div className="modal-backdrop">

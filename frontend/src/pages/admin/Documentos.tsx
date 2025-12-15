@@ -6,7 +6,8 @@ import "./AdminCrud.css";
 /* ================= TIPOS ================= */
 type AutorRef = { AutId: number; AutNom: string; AutApe: string; AutDoc: string };
 type ApiError = { message?: string | string[] };
-type Categoria = { CatId: number; CatNom: string }; // Nueva Interfaz de Categoría
+type Categoria = { CatId: number; CatNom: string }; 
+type Autor = { AutId: number; AutNom: string; AutApe: string; AutDoc: string }; 
 
 type MaterialBibliografico = {
   MatBibId: number;
@@ -42,7 +43,7 @@ function errorMessage(data: unknown, fallback: string) {
 
 /* ================= HOOKS DE DATOS RELACIONADOS ================= */
 
-// SIMULACIÓN de un hook para obtener categorías (necesario para el select)
+// Hook para obtener categorías
 const useCategories = (authFetch: any) => {
   const [categories, setCategories] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +51,7 @@ const useCategories = (authFetch: any) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await authFetch("/api/categorias"); // Asumiendo este endpoint
+        const res = await authFetch("/api/categorias"); 
         if (res.ok) {
           const data = await res.json();
           setCategories(data || []);
@@ -67,23 +68,51 @@ const useCategories = (authFetch: any) => {
   return { categories, loading };
 };
 
+// Hook para obtener autores (activos)
+const useAutores = (authFetch: any) => {
+    const [autores, setAutores] = useState<Autor[]>([]);
+    const [loading, setLoading] = useState(true);
+  
+    useEffect(() => {
+      const fetchAutores = async () => {
+        try {
+          const res = await authFetch("/api/autores"); 
+          if (res.ok) {
+            const data = await res.json();
+            setAutores(data || []);
+          }
+        } catch (e) {
+          console.error("No se pudieron cargar los autores:", e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      void fetchAutores();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return { autores, loading };
+  };
 
-/* ================= FORMULARIO CORREGIDO ================= */
+
+/* ================= FORMULARIO CORREGIDO (FINAL) ================= */
 function DocumentoForm({
   initial,
   onSave,
   onCancel,
   categories,
+  autores,
 }: {
   initial: MaterialBibliografico | null;
   onSave: (data: any) => void;
   onCancel: () => void;
   categories: Categoria[];
+  autores: Autor[]; 
 }) {
   const [form, setForm] = useState({
     MatBibCod: "",
     MatBibTit: "",
-    CatId: categories.length > 0 ? categories[0].CatId : 0, // Establecer el primer ID como valor inicial
+    CatId: categories.length > 0 ? categories[0].CatId : 0,
+    selectedAutoresIds: [] as number[],
   });
 
   useEffect(() => {
@@ -92,27 +121,48 @@ function DocumentoForm({
             MatBibCod: initial.MatBibCod ?? "",
             MatBibTit: initial.MatBibTit ?? "",
             CatId: initial.CatId,
+            selectedAutoresIds: (initial.autoresMaterial || []).map(a => a.autor.AutId),
         });
     } else if (categories.length > 0 && form.CatId === 0) {
-        // Inicializar CatId si es un formulario nuevo y se cargan las categorías
         setForm(f => ({ ...f, CatId: categories[0].CatId }));
     }
   }, [initial, categories]);
 
+  const handleAutoresChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const options = Array.from(e.target.options);
+    const selected = options.filter(opt => opt.selected).map(opt => Number(opt.value));
+    setForm(f => ({ ...f, selectedAutoresIds: selected }));
+  };
+
   const submit = () => {
-    // Verificar que los campos obligatorios estén presentes
     if (!form.MatBibCod || !form.MatBibTit || !form.CatId) return;
+
+    // 🏆 SOLUCIÓN FINAL AL ERROR 400: 'property AutId should not exist' y 'AutDoc must be a string'
+    // 1. Encontramos los objetos completos de autores seleccionados.
+    const selectedAutores = autores.filter(aut => 
+        form.selectedAutoresIds.includes(aut.AutId)
+    );
+
+    // 2. Mapeamos para crear el payload final: solo el campo AutDoc (Documento).
+    const autoresPayload = selectedAutores.map(aut => ({
+        AutDoc: aut.AutDoc, 
+    }));
+    
+    // Aquí podrías agregar valores por defecto que el backend requiera si es un POST (nuevo documento),
+    // como MatBibAno: false, MatBibFor: "NINGUNO", MatBibAct: true.
 
     onSave({
       MatBibCod: form.MatBibCod.trim(),
       MatBibTit: form.MatBibTit.trim(),
-      CatId: form.CatId, // ¡Añadido el campo CatId!
-      // Nota: Si es nuevo, MatBibAno, MatBibFor y MatBibAct podrían ser necesarios
-      // Si el backend los maneja por defecto, no hace falta.
+      CatId: form.CatId, 
+      autores: autoresPayload, // <-- ¡Payload de autores listo para NestJS!
     });
   };
 
   const isCategoryLoading = categories.length === 0 && initial === null;
+  const isAutoresLoading = autores.length === 0 && initial === null;
+
+  const isDisabled = isCategoryLoading || isAutoresLoading;
 
   return (
     <>
@@ -132,7 +182,7 @@ function DocumentoForm({
           onChange={(e) => setForm({ ...form, MatBibTit: e.target.value })}
         />
         
-        {/* SELECT: Categoría (Solución al error CatId) */}
+        {/* SELECT: Categoría */}
         <select
             className="input"
             value={form.CatId}
@@ -146,11 +196,28 @@ function DocumentoForm({
                 </option>
             ))}
         </select>
-        {/* Aquí iría la gestión de Autores */}
+
+        {/* SELECT MÚLTIPLE: Autores */}
+        <select
+            className="input"
+            multiple={true}
+            value={form.selectedAutoresIds.map(String)} 
+            onChange={handleAutoresChange}
+            disabled={isAutoresLoading}
+            style={{ minHeight: '100px' }}
+        >
+            {isAutoresLoading && <option disabled>Cargando autores...</option>}
+            {autores.map(aut => (
+                <option key={aut.AutId} value={aut.AutId}>
+                    {`${aut.AutNom} ${aut.AutApe} (${aut.AutDoc})`}
+                </option>
+            ))}
+        </select>
+
       </div>
 
       <div className="modal-actions">
-        <button className="btn" onClick={submit} disabled={isCategoryLoading}>
+        <button className="btn" onClick={submit} disabled={isDisabled}>
           Guardar
         </button>
         <button className="btn secondary" onClick={onCancel}>
@@ -166,31 +233,28 @@ export default function Documentos() {
   const setTitle = useOutletContext<((title: string) => void) | undefined>();
   const { authFetch } = useAuth();
   
-  // Nuevo: Cargar categorías
+  // Cargar datos relacionados
   const { categories } = useCategories(authFetch);
+  const { autores } = useAutores(authFetch);
 
   useEffect(() => {
     setTitle?.("Documentos");
   }, [setTitle]);
 
-  /* ===== ESTADO ===== */
+  /* ===== ESTADO Y FILTROS ===== */
+  
   const [items, setItems] = useState<MaterialBibliografico[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // filtros
   const [search, setSearch] = useState("");
   const [view, setView] = useState<View>("activos");
-
-  // modales
   const [modal, setModal] = useState<ModalState>(null);
   const [selected, setSelected] = useState<MaterialBibliografico | null>(null);
-
-  // paginación
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  /* ===== LOAD ===== */
+  /* ===== LOAD DATA ===== */
+  
   const load = async () => {
     setLoading(true);
     setError(null);
@@ -219,13 +283,13 @@ export default function Documentos() {
 
   useEffect(() => {
     void load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
   useEffect(() => {
     setPage(1);
   }, [search, pageSize]);
 
-  /* ===== FILTROS ===== */
   const filteredItems = useMemo(() => {
     return items.filter(
       (m) =>
@@ -239,7 +303,6 @@ export default function Documentos() {
     );
   }, [items, search]);
 
-  /* ===== PAGINACIÓN ===== */
   const totalPages = Math.ceil(filteredItems.length / pageSize);
 
   const paginatedItems = useMemo(() => {
@@ -248,6 +311,7 @@ export default function Documentos() {
   }, [filteredItems, page, pageSize]);
 
   /* ===== CRUD ACTIONS ===== */
+
   const save = async (payload: any) => {
     const isEdit = modal === "edit" && selected;
     const method = isEdit ? "PATCH" : "POST";
@@ -330,7 +394,7 @@ export default function Documentos() {
     <>
       {error && <div className="error">{error}</div>}
       
-      {/* ===== FILTROS... (omitiendo por brevedad, no hay cambios aquí) ===== */}
+      {/* ===== FILTROS Y BOTONES ===== */}
 
       <div className="filters-card">
         <h3 className="card-title">Filtros</h3>
@@ -355,13 +419,13 @@ export default function Documentos() {
             setSelected(null);
             setModal("new");
           }}
-          disabled={loading || categories.length === 0}
+          disabled={loading || categories.length === 0 || autores.length === 0}
         >
           ➕ Nuevo
         </button>
       </div>
 
-      {/* ===== TABLA... (omitiendo por brevedad) ===== */}
+      {/* ===== TABLA ===== */}
 
       <div className="table-card">
         <h3 className="card-title">Listado de Documentos</h3>
@@ -385,7 +449,7 @@ export default function Documentos() {
                 <th>ID</th>
                 <th>Código</th>
                 <th>Título</th>
-                <th>Categoría</th> {/* Cambio de CatId a Categoría para mejor UX */}
+                <th>Categoría</th> 
                 <th>Formato</th>
                 <th>Físicos</th>
                 <th>Virtual</th>
@@ -395,8 +459,8 @@ export default function Documentos() {
               </tr>
             </thead>
             <tbody>
-              {paginatedItems.map((m, i) => {
-                const autores = (m.autoresMaterial || []).map(
+              {paginatedItems.map((m) => {
+                const autoresList = (m.autoresMaterial || []).map(
                   (x) => `${x.autor.AutNom} ${x.autor.AutApe}`
                 );
                 const fis =
@@ -427,9 +491,9 @@ export default function Documentos() {
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
                       }}
-                      title={autores.join(", ")}
+                      title={autoresList.join(", ")}
                     >
-                      {autores.join(", ")}
+                      {autoresList.join(", ")}
                     </td>
                     <td>{m.MatBibAct ? "Sí" : "No"}</td>
                     <td className="actions">
@@ -456,7 +520,7 @@ export default function Documentos() {
         </div>
       </div>
 
-      {/* ===== PAGINACIÓN... (omitiendo por brevedad) ===== */}
+      {/* ===== PAGINACIÓN ===== */}
 
       <div className="pagination">
         <button
@@ -478,30 +542,33 @@ export default function Documentos() {
         </button>
       </div>
 
-      {/* ===== MODALES CORREGIDOS ===== */}
+      {/* ===== MODALES ===== */}
       {modal && (
         <div className="modal-backdrop">
           <div className="modal">
-            {/* View Modal (omitiendo por brevedad) */}
+            {/* View Modal */}
             {modal === "view" && selected && (
               <>
                 <h3>Detalle del Documento</h3>
                 <p><b>Título:</b> {selected.MatBibTit}</p>
                 <p><b>Categoría:</b> {categories.find(c => c.CatId === selected.CatId)?.CatNom || selected.CatId}</p>
+                <p><b>Autores:</b> {(selected.autoresMaterial || []).map(a => `${a.autor.AutNom} ${a.autor.AutApe}`).join(', ') || '—'}</p>
                 <button className="btn" onClick={() => setModal(null)}>Cerrar</button>
               </>
             )}
 
+            {/* Formulario (New/Edit) */}
             {(modal === "new" || modal === "edit") && (
               <DocumentoForm
                 initial={modal === "edit" ? selected : null}
                 onSave={save}
                 onCancel={() => setModal(null)}
-                categories={categories} // Pasando la lista de categorías
+                categories={categories} 
+                autores={autores} 
               />
             )}
 
-            {/* Delete, Reactivate, Recalculate Modals (omitiendo por brevedad) */}
+            {/* Delete, Reactivate, Recalculate Modals */}
             {modal === "delete" && (
                 <>
                 <h3>¿Desactivar documento?</h3>
