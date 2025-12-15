@@ -1,227 +1,337 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import type { Categoria, CategoriaForm, CategoriaView } from '../../types/categoria';
-import './AdminCrud.css';
+import { useEffect, useMemo, useState } from "react";
+import { useOutletContext } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import type { Categoria } from "../../types/categoria";
+import "./AdminCrud.css";
 
-type ApiError = { message?: string | string[] };
-
-function errorMessage(data: unknown, fallback: string) {
-  const err = data as ApiError;
-  if (Array.isArray(err?.message)) return err.message.join(', ');
-  if (typeof err?.message === 'string' && err.message.trim()) return err.message;
-  return fallback;
-}
-
-export default function Categorias() {
-  const setTitle = useOutletContext<((title: string) => void) | undefined>();
-  const { authFetch } = useAuth();
-
-  const [view, setView] = useState<CategoriaView>('activos');
-  const [items, setItems] = useState<Categoria[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [editing, setEditing] = useState<Categoria | null>(null);
-  const [form, setForm] = useState<CategoriaForm>({ CatNom: '', CatDes: '' });
+/* ================= FORMULARIO ================= */
+function CategoriaForm({
+  initial,
+  onSave,
+  onCancel,
+}: {
+  initial: Categoria | null;
+  onSave: (data: any) => void;
+  onCancel: () => void;
+}) {
+  const [form, setForm] = useState({
+    CatNom: "",
+    CatDes: "",
+  });
 
   useEffect(() => {
-    setTitle?.('Categorías');
-  }, [setTitle]);
+    if (!initial) return;
+    setForm({
+      CatNom: initial.CatNom ?? "",
+      CatDes: initial.CatDes ?? "",
+    });
+  }, [initial]);
 
-  useEffect(() => {
-    if (!editing) {
-      setForm({ CatNom: '', CatDes: '' });
-      return;
-    }
-    setForm({ CatNom: editing.CatNom, CatDes: editing.CatDes ?? '' });
-  }, [editing]);
+  const submit = () => {
+    if (!form.CatNom.trim()) return;
 
-  const endpoints = useMemo(
-    () => [
-      { method: 'GET', path: '/api/categorias', note: 'Listar activas' },
-      { method: 'GET', path: '/api/categorias/desactivadas', note: 'Listar desactivadas' },
-      { method: 'GET', path: '/api/categorias/:id', note: 'Detalle' },
-      { method: 'POST', path: '/api/categorias', note: 'Crear' },
-      { method: 'PATCH', path: '/api/categorias/:id', note: 'Editar' },
-      { method: 'PATCH', path: '/api/categorias/reactivar/:id', note: 'Reactivar' },
-      { method: 'DELETE', path: '/api/categorias/:id', note: 'Desactivar' },
-    ],
-    [],
-  );
-
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-
-    const listUrl = view === 'activos' ? '/api/categorias' : '/api/categorias/desactivadas';
-    const res = await authFetch(listUrl);
-    const data: unknown = await res.json().catch(() => ([] as unknown));
-
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo cargar categorías'));
-      setItems([]);
-      setLoading(false);
-      return;
-    }
-
-    setItems(Array.isArray(data) ? (data as Categoria[]) : []);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
-
-  const submit = async () => {
-    setLoading(true);
-    setError(null);
-
-    const payload = {
+    onSave({
       CatNom: form.CatNom.trim(),
-      CatDes: form.CatDes.trim() ? form.CatDes.trim() : undefined,
-    };
-
-    const url = editing ? `/api/categorias/${editing.CatId}` : '/api/categorias';
-    const method = editing ? 'PATCH' : 'POST';
-
-    const res = await authFetch(url, { method, body: JSON.stringify(payload) });
-    const data: unknown = await res.json().catch(() => ({} as unknown));
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo guardar la categoría'));
-      setLoading(false);
-      return;
-    }
-
-    setEditing(null);
-    await load();
-  };
-
-  const deactivate = async (id: number) => {
-    setLoading(true);
-    setError(null);
-    const res = await authFetch(`/api/categorias/${id}`, { method: 'DELETE' });
-    const data: unknown = await res.json().catch(() => ({} as unknown));
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo desactivar la categoría'));
-      setLoading(false);
-      return;
-    }
-    await load();
-  };
-
-  const reactivate = async (id: number) => {
-    setLoading(true);
-    setError(null);
-    const res = await authFetch(`/api/categorias/reactivar/${id}`, { method: 'PATCH' });
-    const data: unknown = await res.json().catch(() => ({} as unknown));
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo reactivar la categoría'));
-      setLoading(false);
-      return;
-    }
-    await load();
+      CatDes: form.CatDes.trim() || undefined,
+    });
   };
 
   return (
     <>
+      <h3>{initial ? "Editar categoría" : "Registrar categoría"}</h3>
+
+      <div className="form-grid">
+        <input
+          placeholder="Nombre de la categoría"
+          value={form.CatNom}
+          onChange={(e) => setForm({ ...form, CatNom: e.target.value })}
+        />
+        <input
+          placeholder="Descripción (opcional)"
+          value={form.CatDes}
+          onChange={(e) => setForm({ ...form, CatDes: e.target.value })}
+        />
+      </div>
+
+      <div className="modal-actions">
+        <button className="btn" onClick={submit}>
+          Guardar
+        </button>
+        <button className="btn secondary" onClick={onCancel}>
+          Cancelar
+        </button>
+      </div>
+    </>
+  );
+}
+
+/* ================= COMPONENTE PRINCIPAL ================= */
+export default function Categorias() {
+  const setTitle = useOutletContext<(title: string) => void>();
+  const { authFetch } = useAuth();
+
+  useEffect(() => {
+    setTitle?.("Categorías");
+  }, [setTitle]);
+
+  /* ===== ESTADO ===== */
+  const [items, setItems] = useState<Categoria[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // filtros
+  const [search, setSearch] = useState("");
+  const [view, setView] = useState<"activos" | "desactivadas">("activos");
+
+  // modales
+  const [modal, setModal] =
+    useState<null | "view" | "new" | "edit" | "delete" | "reactivate">(null);
+  const [selected, setSelected] = useState<Categoria | null>(null);
+
+  // paginación
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  /* ===== LOAD ===== */
+  const load = async () => {
+    setLoading(true);
+    try {
+      const url =
+        view === "activos"
+          ? "/api/categorias"
+          : "/api/categorias/desactivadas";
+
+      const res = await authFetch(url);
+      const data = await res.json();
+      setItems(Array.isArray(data) ? data : []);
+    } catch {
+      setError("No se pudo cargar categorías");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, [view]);
+
+  // reset página
+  useEffect(() => {
+    setPage(1);
+  }, [search, pageSize]);
+
+  /* ===== FILTROS ===== */
+  const filteredItems = useMemo(() => {
+    return items.filter((c) =>
+      c.CatNom.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [items, search]);
+
+  /* ===== PAGINACIÓN ===== */
+  const totalPages = Math.ceil(filteredItems.length / pageSize);
+
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, page, pageSize]);
+
+  /* ===== CRUD ===== */
+  const save = async (payload: any) => {
+    const isEdit = modal === "edit" && selected;
+
+    const method = isEdit ? "PATCH" : "POST";
+    const url = isEdit
+      ? `/api/categorias/${selected!.CatId}`
+      : "/api/categorias";
+
+    await authFetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    setModal(null);
+    setSelected(null);
+    await load();
+  };
+
+  const deactivate = async () => {
+    if (!selected) return;
+    await authFetch(`/api/categorias/${selected.CatId}`, { method: "DELETE" });
+    setModal(null);
+    setSelected(null);
+    await load();
+  };
+
+  const reactivate = async () => {
+    if (!selected) return;
+    await authFetch(`/api/categorias/reactivar/${selected.CatId}`, {
+      method: "PATCH",
+    });
+    setModal(null);
+    setSelected(null);
+    await load();
+  };
+
+  /* ===== UI ===== */
+  return (
+    <>
       {error && <div className="error">{error}</div>}
 
+      {/* ===== FILTROS ===== */}
       <div className="filters-card">
+        <h3 className="card-title">Filtros</h3>
+
+        <input
+          className="input"
+          placeholder="Buscar por nombre"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
         <select
           className="input"
           value={view}
-          onChange={(e) => setView(e.target.value as CategoriaView)}
-          disabled={loading}
+          onChange={(e) => setView(e.target.value as any)}
         >
           <option value="activos">Activas</option>
           <option value="desactivadas">Desactivadas</option>
         </select>
 
-        <input
-          className="input"
-          placeholder="Nombre (CatNom)"
-          value={form.CatNom}
-          onChange={(e) => setForm((f) => ({ ...f, CatNom: e.target.value }))}
-          disabled={loading || view === 'desactivadas'}
-        />
-        <input
-          className="input"
-          placeholder="Descripción (opcional)"
-          value={form.CatDes}
-          onChange={(e) => setForm((f) => ({ ...f, CatDes: e.target.value }))}
-          disabled={loading || view === 'desactivadas'}
-        />
+        <button
+          className="btn-new"
+          onClick={() => {
+            setSelected(null);
+            setModal("new");
+          }}
+        >
+          ➕ Nuevo
+        </button>
+      </div>
 
-        <button className="btn" onClick={() => void submit()} disabled={loading || view === 'desactivadas'}>
-          {editing ? 'Guardar' : 'Crear'}
+      {/* ===== TABLA ===== */}
+      <div className="table-card">
+        <h3 className="card-title">Listado de Categorías</h3>
+
+        <div className="table-toolbar">
+          <span>Mostrar</span>
+          <select
+            className="input-small"
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+          </select>
+          <span>registros</span>
+        </div>
+
+        <div className="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Activa</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedItems.map((c, i) => (
+                <tr key={c.CatId}>
+                  <td>{(page - 1) * pageSize + i + 1}</td>
+                  <td>{c.CatNom}</td>
+                  <td>{c.CatDes || "—"}</td>
+                  <td>{c.CatAct ? "Sí" : "No"}</td>
+                  <td className="actions">
+                    <button onClick={() => { setSelected(c); setModal("view"); }}>👁️</button>
+                    <button onClick={() => { setSelected(c); setModal("edit"); }}>✏️</button>
+                    {view === "activos" ? (
+                      <button onClick={() => { setSelected(c); setModal("delete"); }}>🗑️</button>
+                    ) : (
+                      <button onClick={() => { setSelected(c); setModal("reactivate"); }}>♻️</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+
+              {!loading && paginatedItems.length === 0 && (
+                <tr>
+                  <td colSpan={5}>Sin registros</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ===== PAGINACIÓN ===== */}
+      <div className="pagination">
+        <button
+          className="btn-secondary"
+          disabled={page === 1}
+          onClick={() => setPage((p) => p - 1)}
+        >
+          ⬅ Anterior
         </button>
 
-        {editing && (
-          <button className="btn secondary" onClick={() => setEditing(null)} disabled={loading}>
-            Cancelar
-          </button>
-        )}
+        <span>
+          Página {page} de {totalPages || 1}
+        </span>
+
+        <button
+          className="btn-secondary"
+          disabled={page === totalPages || totalPages === 0}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          Siguiente ➡
+        </button>
       </div>
 
-      <div className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Descripción</th>
-              <th>Activa</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((c) => (
-              <tr key={c.CatId}>
-                <td>{c.CatId}</td>
-                <td>{c.CatNom}</td>
-                <td>{c.CatDes || '—'}</td>
-                <td>{c.CatAct ? 'Sí' : 'No'}</td>
-                <td className="actions">
-                  <button
-                    title="Editar"
-                    onClick={() => setEditing(c)}
-                    disabled={loading || view === 'desactivadas'}
-                  >
-                    ✏️
-                  </button>
-                  {view === 'activos' ? (
-                    <button title="Desactivar" onClick={() => void deactivate(c.CatId)} disabled={loading}>
-                      🗑️
-                    </button>
-                  ) : (
-                    <button title="Reactivar" onClick={() => void reactivate(c.CatId)} disabled={loading}>
-                      ♻️
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {!loading && items.length === 0 && (
-              <tr>
-                <td colSpan={5}>Sin registros</td>
-              </tr>
+      {/* ===== MODALES ===== */}
+      {modal && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            {modal === "view" && selected && (
+              <>
+                <h3>Detalle de la categoría</h3>
+                <p><b>Nombre:</b> {selected.CatNom}</p>
+                <p><b>Descripción:</b> {selected.CatDes || "—"}</p>
+                <p><b>Activa:</b> {selected.CatAct ? "Sí" : "No"}</p>
+                <button className="btn" onClick={() => setModal(null)}>Cerrar</button>
+              </>
             )}
-          </tbody>
-        </table>
-      </div>
 
-      <div className="endpoints">
-        <h3>Endpoints</h3>
-        {endpoints.map((e) => (
-          <div className="endpoint-row" key={`${e.method}-${e.path}`}>
-            <span className={`badge ${e.method.toLowerCase()}`}>{e.method}</span>
-            <span className="code">{e.path}</span>
-            <span style={{ marginLeft: 'auto', color: '#555' }}>{e.note}</span>
+            {(modal === "new" || modal === "edit") && (
+              <CategoriaForm
+                initial={modal === "edit" ? selected : null}
+                onSave={save}
+                onCancel={() => setModal(null)}
+              />
+            )}
+
+            {modal === "delete" && (
+              <>
+                <h3>¿Desactivar categoría?</h3>
+                <p>No estará disponible para selección</p>
+                <button className="btn danger" onClick={deactivate}>Desactivar</button>
+                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+              </>
+            )}
+
+            {modal === "reactivate" && (
+              <>
+                <h3>¿Reactivar categoría?</h3>
+                <button className="btn" onClick={reactivate}>Reactivar</button>
+                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+              </>
+            )}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </>
   );
 }
+

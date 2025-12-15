@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import './AdminCrud.css';
+import { useEffect, useMemo, useState } from "react";
+import { useOutletContext } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import "./AdminCrud.css";
 
-type ApiError = { message?: string | string[] };
-
+/* ================= TIPOS ================= */
 type Autor = {
   AutId: number;
   AutNom: string;
@@ -13,258 +12,349 @@ type Autor = {
   AutEma: string | null;
   AutAct: boolean;
   AutFecCre?: string;
-  AutFecAct?: string;
 };
 
-type AutorForm = {
-  AutNom: string;
-  AutApe: string;
-  AutDoc: string;
-  AutEma: string;
-};
-
-type View = 'activos' | 'desactivados';
-
-function errorMessage(data: unknown, fallback: string) {
-  const err = data as ApiError;
-  if (Array.isArray(err?.message)) return err.message.join(', ');
-  if (typeof err?.message === 'string' && err.message.trim()) return err.message;
-  return fallback;
-}
-
-export default function Autores() {
-  const setTitle = useOutletContext<((title: string) => void) | undefined>();
-  const { authFetch } = useAuth();
-
-  const [view, setView] = useState<View>('activos');
-  const [items, setItems] = useState<Autor[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [editing, setEditing] = useState<Autor | null>(null);
-  const [form, setForm] = useState<AutorForm>({ AutNom: '', AutApe: '', AutDoc: '', AutEma: '' });
+/* ================= FORMULARIO ================= */
+function AutorForm({
+  initial,
+  onSave,
+  onCancel,
+}: {
+  initial: Autor | null;
+  onSave: (data: any) => void;
+  onCancel: () => void;
+}) {
+  const [form, setForm] = useState({
+    AutNom: "",
+    AutApe: "",
+    AutDoc: "",
+    AutEma: "",
+  });
 
   useEffect(() => {
-    setTitle?.('Autores');
-  }, [setTitle]);
-
-  useEffect(() => {
-    if (!editing) {
-      setForm({ AutNom: '', AutApe: '', AutDoc: '', AutEma: '' });
-      return;
-    }
+    if (!initial) return;
     setForm({
-      AutNom: editing.AutNom,
-      AutApe: editing.AutApe,
-      AutDoc: editing.AutDoc,
-      AutEma: editing.AutEma ?? '',
+      AutNom: initial.AutNom ?? "",
+      AutApe: initial.AutApe ?? "",
+      AutDoc: initial.AutDoc ?? "",
+      AutEma: initial.AutEma ?? "",
     });
-  }, [editing]);
+  }, [initial]);
 
-  const endpoints = useMemo(
-    () => [
-      { method: 'GET', path: '/api/autores', note: 'Listar activos' },
-      { method: 'GET', path: '/api/autores/desactivados', note: 'Listar desactivados' },
-      { method: 'GET', path: '/api/autores/:id', note: 'Detalle' },
-      { method: 'POST', path: '/api/autores', note: 'Crear' },
-      { method: 'PATCH', path: '/api/autores/:id', note: 'Actualizar' },
-      { method: 'PATCH', path: '/api/autores/reactivar/:id', note: 'Reactivar' },
-      { method: 'DELETE', path: '/api/autores/:id', note: 'Desactivar (soft delete)' },
-    ],
-    [],
-  );
+  const submit = () => {
+    if (!form.AutNom || !form.AutApe || !form.AutDoc) return;
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-
-    const url = view === 'activos' ? '/api/autores' : '/api/autores/desactivados';
-    const res = await authFetch(url);
-    const data = (await res.json().catch(() => null)) as unknown;
-
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo cargar autores'));
-      setItems([]);
-      setLoading(false);
-      return;
-    }
-
-    setItems((data as Autor[]) || []);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
-
-  const submit = async () => {
-    setLoading(true);
-    setError(null);
-
-    const payload = {
-      AutNom: form.AutNom,
-      AutApe: form.AutApe,
-      AutDoc: form.AutDoc,
-      AutEma: form.AutEma ? form.AutEma : undefined,
-    };
-
-    const res = await authFetch(editing ? `/api/autores/${editing.AutId}` : '/api/autores', {
-      method: editing ? 'PATCH' : 'POST',
-      body: JSON.stringify(payload),
+    onSave({
+      AutNom: form.AutNom.trim(),
+      AutApe: form.AutApe.trim(),
+      AutDoc: form.AutDoc.trim(),
+      AutEma: form.AutEma.trim() || undefined,
     });
-
-    const data = (await res.json().catch(() => null)) as unknown;
-
-    if (!res.ok) {
-      setError(errorMessage(data, editing ? 'No se pudo actualizar' : 'No se pudo crear'));
-      setLoading(false);
-      return;
-    }
-
-    setEditing(null);
-    await load();
-  };
-
-  const deactivate = async (id: number) => {
-    setLoading(true);
-    setError(null);
-
-    const res = await authFetch(`/api/autores/${id}`, { method: 'DELETE' });
-    const data = (await res.json().catch(() => null)) as unknown;
-
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo desactivar'));
-      setLoading(false);
-      return;
-    }
-
-    await load();
-  };
-
-  const reactivate = async (id: number) => {
-    setLoading(true);
-    setError(null);
-
-    const res = await authFetch(`/api/autores/reactivar/${id}`, { method: 'PATCH' });
-    const data = (await res.json().catch(() => null)) as unknown;
-
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo reactivar'));
-      setLoading(false);
-      return;
-    }
-
-    await load();
   };
 
   return (
     <>
-      {error && <div className="error">{error}</div>}
+      <h3>{initial ? "Editar autor" : "Registrar autor"}</h3>
 
-      <div className="filters-card">
-        <select className="input" value={view} onChange={(e) => setView(e.target.value as View)} disabled={loading}>
-          <option value="activos">Activos</option>
-          <option value="desactivados">Desactivados</option>
-        </select>
-
+      <div className="form-grid">
         <input
-          className="input"
-          placeholder="Nombre"
+          placeholder="Nombres"
           value={form.AutNom}
-          onChange={(e) => setForm((s) => ({ ...s, AutNom: e.target.value }))}
-          disabled={loading || view === 'desactivados'}
+          onChange={(e) => setForm({ ...form, AutNom: e.target.value })}
         />
         <input
-          className="input"
-          placeholder="Apellido"
+          placeholder="Apellidos"
           value={form.AutApe}
-          onChange={(e) => setForm((s) => ({ ...s, AutApe: e.target.value }))}
-          disabled={loading || view === 'desactivados'}
+          onChange={(e) => setForm({ ...form, AutApe: e.target.value })}
         />
         <input
-          className="input"
-          placeholder="Documento (AutDoc)"
+          placeholder="Documento"
           value={form.AutDoc}
-          onChange={(e) => setForm((s) => ({ ...s, AutDoc: e.target.value }))}
-          disabled={loading || view === 'desactivados'}
+          onChange={(e) => setForm({ ...form, AutDoc: e.target.value })}
         />
         <input
-          className="input"
-          placeholder="Email (opcional)"
+          placeholder="Correo (opcional)"
           value={form.AutEma}
-          onChange={(e) => setForm((s) => ({ ...s, AutEma: e.target.value }))}
-          disabled={loading || view === 'desactivados'}
+          onChange={(e) => setForm({ ...form, AutEma: e.target.value })}
         />
+      </div>
 
-        <button className="btn" onClick={() => void submit()} disabled={loading || view === 'desactivados'}>
-          {editing ? 'Guardar' : 'Crear'}
+      <div className="modal-actions">
+        <button className="btn" onClick={submit}>
+          Guardar
         </button>
-
-        {editing && (
-          <button className="btn secondary" onClick={() => setEditing(null)} disabled={loading}>
-            Cancelar
-          </button>
-        )}
-      </div>
-
-      <div className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Apellido</th>
-              <th>Documento</th>
-              <th>Email</th>
-              <th>Activo</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((a) => (
-              <tr key={a.AutId}>
-                <td>{a.AutId}</td>
-                <td>{a.AutNom}</td>
-                <td>{a.AutApe}</td>
-                <td>{a.AutDoc}</td>
-                <td>{a.AutEma ?? ''}</td>
-                <td>{a.AutAct ? 'Sí' : 'No'}</td>
-                <td className="actions">
-                  <button title="Editar" onClick={() => setEditing(a)} disabled={loading || view === 'desactivados'}>
-                    ✏️
-                  </button>
-                  {view === 'activos' ? (
-                    <button title="Desactivar" onClick={() => void deactivate(a.AutId)} disabled={loading}>
-                      🗑️
-                    </button>
-                  ) : (
-                    <button title="Reactivar" onClick={() => void reactivate(a.AutId)} disabled={loading}>
-                      ♻️
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {!loading && items.length === 0 && (
-              <tr>
-                <td colSpan={7}>Sin registros</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="endpoints">
-        <h3>Endpoints</h3>
-        {endpoints.map((e) => (
-          <div className="endpoint-row" key={`${e.method}-${e.path}`}>
-            <span className={`badge ${e.method.toLowerCase()}`}>{e.method}</span>
-            <span className="code">{e.path}</span>
-            <span style={{ marginLeft: 'auto', color: '#555' }}>{e.note}</span>
-          </div>
-        ))}
+        <button className="btn secondary" onClick={onCancel}>
+          Cancelar
+        </button>
       </div>
     </>
   );
 }
+
+/* ================= COMPONENTE PRINCIPAL ================= */
+export default function Autores() {
+  const setTitle = useOutletContext<(title: string) => void>();
+  const { authFetch } = useAuth();
+
+  useEffect(() => {
+    setTitle?.("Autores");
+  }, [setTitle]);
+
+  /* ===== ESTADO ===== */
+  const [items, setItems] = useState<Autor[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // filtros
+  const [search, setSearch] = useState("");
+  const [view, setView] = useState<"activos" | "desactivados">("activos");
+
+  // modales
+  const [modal, setModal] =
+    useState<null | "view" | "new" | "edit" | "delete" | "reactivate">(null);
+  const [selected, setSelected] = useState<Autor | null>(null);
+
+  // paginación
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  /* ===== LOAD ===== */
+  const load = async () => {
+    setLoading(true);
+    try {
+      const url =
+        view === "activos" ? "/api/autores" : "/api/autores/desactivados";
+      const res = await authFetch(url);
+      const data = await res.json();
+      setItems(Array.isArray(data) ? data : []);
+    } catch {
+      setError("No se pudo cargar autores");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, [view]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, pageSize]);
+
+  /* ===== FILTROS ===== */
+  const filteredItems = useMemo(() => {
+    return items.filter((a) =>
+      `${a.AutNom} ${a.AutApe}`.toLowerCase().includes(search.toLowerCase()) ||
+      a.AutDoc.includes(search) ||
+      (a.AutEma ?? "").toLowerCase().includes(search.toLowerCase())
+    );
+  }, [items, search]);
+
+  /* ===== PAGINACIÓN ===== */
+  const totalPages = Math.ceil(filteredItems.length / pageSize);
+
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, page, pageSize]);
+
+  /* ===== CRUD ===== */
+  const save = async (payload: any) => {
+    const isEdit = modal === "edit" && selected;
+    const method = isEdit ? "PATCH" : "POST";
+    const url = isEdit
+      ? `/api/autores/${selected!.AutId}`
+      : "/api/autores";
+
+    await authFetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    setModal(null);
+    setSelected(null);
+    await load();
+  };
+
+  const deactivate = async () => {
+    if (!selected) return;
+    await authFetch(`/api/autores/${selected.AutId}`, { method: "DELETE" });
+    setModal(null);
+    setSelected(null);
+    await load();
+  };
+
+  const reactivate = async () => {
+    if (!selected) return;
+    await authFetch(`/api/autores/reactivar/${selected.AutId}`, {
+      method: "PATCH",
+    });
+    setModal(null);
+    setSelected(null);
+    await load();
+  };
+
+  /* ===== UI ===== */
+  return (
+    <>
+      {error && <div className="error">{error}</div>}
+
+      {/* ===== FILTROS ===== */}
+      <div className="filters-card">
+        <h3 className="card-title">Filtros</h3>
+
+        <input
+          className="input"
+          placeholder="Buscar por nombre, documento o correo"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <select
+          className="input"
+          value={view}
+          onChange={(e) => setView(e.target.value as any)}
+        >
+          <option value="activos">Activos</option>
+          <option value="desactivados">Desactivados</option>
+        </select>
+
+        <button
+          className="btn-new"
+          onClick={() => {
+            setSelected(null);
+            setModal("new");
+          }}
+        >
+          ➕ Nuevo
+        </button>
+      </div>
+
+      {/* ===== TABLA ===== */}
+      <div className="table-card">
+        <h3 className="card-title">Listado de Autores</h3>
+
+        <div className="table-toolbar">
+          <span>Mostrar</span>
+          <select
+            className="input-small"
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+          </select>
+          <span>registros</span>
+        </div>
+
+        <div className="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Documento</th>
+                <th>Correo</th>
+                <th>Activo</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedItems.map((a, i) => (
+                <tr key={a.AutId}>
+                  <td>{(page - 1) * pageSize + i + 1}</td>
+                  <td>{a.AutNom} {a.AutApe}</td>
+                  <td>{a.AutDoc}</td>
+                  <td>{a.AutEma || "—"}</td>
+                  <td>{a.AutAct ? "Sí" : "No"}</td>
+                  <td className="actions">
+                    <button onClick={() => { setSelected(a); setModal("view"); }}>👁️</button>
+                    <button onClick={() => { setSelected(a); setModal("edit"); }}>✏️</button>
+                    {view === "activos" ? (
+                      <button onClick={() => { setSelected(a); setModal("delete"); }}>🗑️</button>
+                    ) : (
+                      <button onClick={() => { setSelected(a); setModal("reactivate"); }}>♻️</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+
+              {!loading && paginatedItems.length === 0 && (
+                <tr>
+                  <td colSpan={6}>Sin registros</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ===== PAGINACIÓN ===== */}
+      <div className="pagination">
+        <button
+          className="btn-secondary"
+          disabled={page === 1}
+          onClick={() => setPage((p) => p - 1)}
+        >
+          ⬅ Anterior
+        </button>
+
+        <span>Página {page} de {totalPages || 1}</span>
+
+        <button
+          className="btn-secondary"
+          disabled={page === totalPages || totalPages === 0}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          Siguiente ➡
+        </button>
+      </div>
+
+      {/* ===== MODALES ===== */}
+      {modal && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            {modal === "view" && selected && (
+              <>
+                <h3>Detalle del autor</h3>
+                <p><b>Nombre:</b> {selected.AutNom} {selected.AutApe}</p>
+                <p><b>Documento:</b> {selected.AutDoc}</p>
+                <p><b>Correo:</b> {selected.AutEma || "—"}</p>
+                <p><b>Activo:</b> {selected.AutAct ? "Sí" : "No"}</p>
+                <button className="btn" onClick={() => setModal(null)}>Cerrar</button>
+              </>
+            )}
+
+            {(modal === "new" || modal === "edit") && (
+              <AutorForm
+                initial={modal === "edit" ? selected : null}
+                onSave={save}
+                onCancel={() => setModal(null)}
+              />
+            )}
+
+            {modal === "delete" && (
+              <>
+                <h3>¿Desactivar autor?</h3>
+                <button className="btn danger" onClick={deactivate}>Desactivar</button>
+                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+              </>
+            )}
+
+            {modal === "reactivate" && (
+              <>
+                <h3>¿Reactivar autor?</h3>
+                <button className="btn" onClick={reactivate}>Reactivar</button>
+                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
