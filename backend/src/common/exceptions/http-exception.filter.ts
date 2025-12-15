@@ -9,7 +9,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message: any = 'Error interno del servidor';
+    let message: unknown = 'Error interno del servidor';
 
     // 1. Si es un error HTTP conocido (ej. 404, 401)
     if (exception instanceof HttpException) {

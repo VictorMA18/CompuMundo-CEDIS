@@ -1,0 +1,75 @@
+.home-root {
+  padding: 10px;
+  color: #222;
+}
+
+.home-title {
+  margin: 0 0 6px;
+  color: #a80000;
+}
+
+.home-subtitle {
+  margin: 0 0 18px;
+  color: #333;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.home-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.home-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.home-card-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.home-status {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.home-status.implementado {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.home-status.pendiente {
+  background: #fff7e6;
+  color: #8f0000;
+}
+
+.home-endpoints {
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.home-endpoint {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+  color: #222;
+  background: #fafafa;
+  border: 1px solid #eee;
+  padding: 8px 10px;
+  border-radius: 10px;
+}

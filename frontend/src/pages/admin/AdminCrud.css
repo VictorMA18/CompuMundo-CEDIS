@@ -1,0 +1,171 @@
+.filters-card {
+  background: #ffffff;
+  padding: 15px;
+  border-radius: 10px;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.input {
+  padding: 9px 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  flex: 1;
+  font-size: 14px;
+  color: #222;
+  background: #fafafa;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #a80000;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(168, 0, 0, 0.15);
+}
+
+.btn {
+  background: #a80000;
+  color: #ffffff;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn:hover {
+  background: #8f0000;
+}
+
+.btn.secondary {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.btn.secondary:hover {
+  background: #d3d3d3;
+}
+
+.btn.danger {
+  background: #d32f2f;
+}
+
+.btn.danger:hover {
+  background: #b71c1c;
+}
+
+.table-card {
+  background: #ffffff;
+  padding: 15px;
+  border-radius: 10px;
+  overflow-x: auto;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+thead {
+  background: #f2f2f2;
+}
+
+th,
+td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e0e0e0;
+  color: #222;
+  font-size: 14px;
+}
+
+th {
+  text-align: left;
+  font-size: 14px;
+  color: #333;
+}
+
+tbody tr:hover {
+  background: #fafafa;
+}
+
+.actions button {
+  margin-right: 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.actions button:hover {
+  transform: scale(1.15);
+}
+
+.notice {
+  background: #fff7e6;
+  border: 1px solid #ffe3b0;
+  color: #333;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.error {
+  background: #fdecea;
+  border: 1px solid #f5c2c7;
+  color: #611a15;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.endpoints {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.endpoints h3 {
+  margin: 0 0 10px;
+  color: #a80000;
+}
+
+.endpoint-row {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  color: #222;
+  font-size: 14px;
+}
+
+.endpoint-row:last-child {
+  border-bottom: none;
+}
+
+.badge {
+  display: inline-block;
+  min-width: 58px;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 12px;
+  color: white;
+}
+
+.badge.get { background: #2e7d32; }
+.badge.post { background: #1565c0; }
+.badge.patch { background: #6a1b9a; }
+.badge.delete { background: #c62828; }
+
+.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}

@@ -1,15 +1,14 @@
-import Sidebar from "./Sidebar";
-import { Outlet } from "react-router-dom";
-import { useState } from "react";
-import logo from "../assets/logo-escuela.png";
-import "./AdminLayout.css";
+import { Outlet } from 'react-router-dom';
+import { useState } from 'react';
+import Sidebar from './Sidebar';
+import logo from '../assets/logo-escuela.png';
+import './AdminLayout.css';
 
 export default function AdminLayout() {
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState('');
 
   return (
     <div className="admin-root">
-      {/* HEADER SUPERIOR */}
       <header className="top-header">
         <img src={logo} alt="Logo" className="top-logo" />
         <div>
@@ -18,7 +17,6 @@ export default function AdminLayout() {
         </div>
       </header>
 
-      {/* CUERPO */}
       <div className="admin-layout">
         <Sidebar />
 
@@ -37,4 +35,3 @@ export default function AdminLayout() {
     </div>
   );
 }
-
