@@ -13,6 +13,9 @@ import { AutorModule } from './autor/autor.module';
 import { AutorMaterialModule } from './autor-material/autor-material.module';
 import { MaterialFisicoModule } from './material-fisico/material-fisico.module';
 import { MaterialVirtualModule } from './material-virtual/material-virtual.module';
+import { PrestamosModule } from './prestamos/prestamos.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ReportesModule } from './reportes/reportes.module';
 
 @Module({
   imports: [
@@ -28,6 +31,9 @@ import { MaterialVirtualModule } from './material-virtual/material-virtual.modul
     AutorMaterialModule,
     MaterialFisicoModule,
     MaterialVirtualModule,
+    ScheduleModule.forRoot(),
+    PrestamosModule,
+    ReportesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
