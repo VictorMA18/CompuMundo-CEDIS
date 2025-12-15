@@ -6,13 +6,17 @@ import { JwtService } from '@nestjs/jwt';
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService
   ) {}
 
   async validateUser(email: string, pass: string) {
     const user = await this.prisma.tB_USUARIO.findUnique({ where: { UsuEma: email } });
     if (!user) return null;
+    // Validar que el usuario esté activo
+    if (!user.UsuAct) {
+      throw new UnauthorizedException('Usuario desactivado. Contacte al administrador');
+    }
     const matched = await bcrypt.compare(pass, user.UsuCon);
     if (!matched) return null;
 

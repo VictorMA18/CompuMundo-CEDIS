@@ -1,40 +1,35 @@
-import { Link, useLocation } from "react-router-dom";
-import "./Sidebar.css";
+import { useAuth } from "../context/AuthContext";
+import AdminSidebar from "./AdminSidebar";
+import BibliotecarioSidebar from "./BibliotecarioSidebar";
 
 export default function Sidebar() {
-  const { pathname } = useLocation();
+  const { user } = useAuth();
 
-  const menu = [
-    { label: "Dashboard", path: "/admin", icon: "🏠" },
-    { label: "Prestamos", path: "/admin/prestamos", icon: "📚" },
-    { label: "Bibliografías", path: "/admin/bibliografias", icon: "📖" },
-    { label: "Lectores", path: "/admin/lectores", icon: "👥" },
-    { label: "Reportes", path: "/admin/reportes", icon: "📊" },
-  ];
+  console.log("Sidebar user:", user);
 
-  return (
-    <div className="sidebar">
-      <div className="user-box">
-        <div className="avatar">JG</div>
-        <p className="username">Jose Godoy</p>
-        <p className="role">Administrador</p>
-      </div>
+  if (!user) {
+    return (
+      <aside style={{ width: 260, background: "#a80000", color: "white", padding: 20 }}>
+        Cargando sesión...
+      </aside>
+    );
+  }
 
-      <nav className="menu">
-        {menu.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={pathname === item.path ? "active" : ""}
-          >
-            <span className="icon">{item.icon}</span>
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+  switch (user.role) {
+    case "admin":
+      return <AdminSidebar />;
 
-      <button className="logout">⏻ Cerrar sesión</button>
-    </div>
-  );
+    case "bibliotecario":
+      return <BibliotecarioSidebar />;
+
+    default:
+      return (
+        <aside style={{ width: 260, padding: 20 }}>
+          <p style={{ color: "black" }}>
+            Rol no autorizado: <b>{user.role}</b>
+          </p>
+        </aside>
+      );
+  }
 }
 

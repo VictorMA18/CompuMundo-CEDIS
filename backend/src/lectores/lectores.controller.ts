@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { LectoresService } from './lectores.service';
 import { CreateLectorDto } from './dto/create-lector.dto';
-import { UpdateLectoreDto } from './dto/update-lector.dto';
+import { UpdateLectorDto } from './dto/update-lector.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -22,20 +22,32 @@ export class LectoresController {
     return this.lectoresService.findAll();
   }
 
+  @Get('desactivados')
+  @Roles("administrador", "bibliotecario")
+  findAllDesactivados() {
+    return this.lectoresService.findAllDesactivados();
+  }
+
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.lectoresService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.lectoresService.findOne(id);
   }
 
   @Roles("administrador", "bibliotecario")
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateLectoreDto: UpdateLectoreDto) {
-    return this.lectoresService.update(+id, updateLectoreDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateLectoreDto: UpdateLectorDto) {
+    return this.lectoresService.update(id, updateLectoreDto);
+  }
+
+  @Roles("administrador", "bibliotecario")
+  @Patch('reactivar/:id')
+  reactivar(@Param('id', ParseIntPipe) id: number) {
+    return this.lectoresService.reactivar(id);
   }
 
   @Roles("administrador", "bibliotecario")
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.lectoresService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.lectoresService.remove(id);
   }
 }

@@ -1,31 +1,39 @@
 import Sidebar from "./Sidebar";
-import "./AdminLayout.css";
 import { Outlet } from "react-router-dom";
 import { useState } from "react";
+import logo from "../assets/logo-escuela.png";
+import "./AdminLayout.css";
 
 export default function AdminLayout() {
   const [title, setTitle] = useState("");
 
   return (
-    <div className="admin-layout">
-      <Sidebar />
-
-      <main className="content">
-        <header className="header">
-          <h2>Centro de Documentación de Ingeniería de Sistemas</h2>
-        </header>
-
-        {title && (
-          <div className="page-title">
-            <h1>{title}</h1>
-          </div>
-        )}
-
-        <div className="page-content">
-          {/* Aquí se envía setTitle a las páginas */}
-          <Outlet context={setTitle} />
+    <div className="admin-root">
+      {/* HEADER SUPERIOR */}
+      <header className="top-header">
+        <img src={logo} alt="Logo" className="top-logo" />
+        <div>
+          <h2>Centro de Documentación</h2>
+          <p>Ingeniería de Sistemas</p>
         </div>
-      </main>
+      </header>
+
+      {/* CUERPO */}
+      <div className="admin-layout">
+        <Sidebar />
+
+        <main className="content">
+          {title && (
+            <div className="page-title">
+              <h1>{title}</h1>
+            </div>
+          )}
+
+          <div className="page-content">
+            <Outlet context={setTitle} />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
