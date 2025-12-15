@@ -258,35 +258,37 @@ export class MaterialBibliograficoService {
     };
   }
 
-  async update(
+async update(
     id: number,
-    dto: UpdateMaterialBibliograficoDto,
+    updateMaterialBibliograficoDto: UpdateMaterialBibliograficoDto,
     prismaClient: PrismaService | Prisma.TransactionClient = this.prisma
   ): Promise<IMaterialBibliografico> {
     return this.withTransaction(async (tx) => {
-
       const material = await this.findOne(id, tx);
 
-      if (dto.CatId !== undefined) {
-        await this.categoriaService.findOne(dto.CatId, tx);
+      if (updateMaterialBibliograficoDto.CatId) {
+        await this.categoriaService.findOne(updateMaterialBibliograficoDto.CatId, tx);
       }
 
-      if (dto.MatBibCod && dto.MatBibCod !== material.MatBibCod) {
+      if (
+        updateMaterialBibliograficoDto.MatBibCod &&
+        updateMaterialBibliograficoDto.MatBibCod !== material.MatBibCod
+      ) {
         const existente = await tx.tB_MATERIAL_BIBLIOGRAFICO.findUnique({
-          where: { MatBibCod: dto.MatBibCod },
+          where: { MatBibCod: updateMaterialBibliograficoDto.MatBibCod },
         });
         if (existente) {
           throw new BadRequestException('El código de material ya existe');
         }
       }
 
-      if (Array.isArray(dto.autores)) {
+      if (Array.isArray(updateMaterialBibliograficoDto.autores)) {
         await tx.tB_AUTOR_MATERIAL.updateMany({
           where: { MatBibId: id },
           data: { AutMatAct: false },
         });
 
-        for (const autorDto of dto.autores) {
+        for (const autorDto of updateMaterialBibliograficoDto.autores) {
           const autor = await this.autorService.findOneByDoc(autorDto.AutDoc, tx);
 
           const relacion = await tx.tB_AUTOR_MATERIAL.findFirst({
@@ -306,21 +308,27 @@ export class MaterialBibliograficoService {
           }
         }
 
-        dto.MatBibAno = false;
+        updateMaterialBibliograficoDto.MatBibAno = false;
+      } else {
+        await tx.tB_AUTOR_MATERIAL.updateMany({
+          where: { MatBibId: id },
+          data: { AutMatAct: false },
+        });
+        updateMaterialBibliograficoDto.MatBibAno = true;
       }
 
-      const { autores, ...data } = dto;
+      const {autores, ...data } = updateMaterialBibliograficoDto
 
       const updatedMaterial = await tx.tB_MATERIAL_BIBLIOGRAFICO.update({
         where: { MatBibId: id },
-        data,
+        data: data,
         select: materialSelect,
       });
 
       await this.recalcularFormato(id, tx);
 
       return this.withAutores(updatedMaterial, tx);
-
+      
     }, prismaClient);
   }
 
