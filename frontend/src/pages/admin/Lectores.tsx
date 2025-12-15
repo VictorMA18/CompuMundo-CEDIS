@@ -1,271 +1,358 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import type { Lector, LectorForm, LectorTipo, LectorView } from '../../types/lector';
-import './AdminCrud.css';
+import { useEffect, useMemo, useState } from "react";
+import { useOutletContext } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import "./AdminCrud.css";
 
-type ApiError = { message?: string | string[] };
-
-function errorMessage(data: unknown, fallback: string) {
-  const err = data as ApiError;
-  if (Array.isArray(err?.message)) return err.message.join(', ');
-  if (typeof err?.message === 'string' && err.message.trim()) return err.message;
-  return fallback;
-}
-
-const lectorTipos: LectorTipo[] = ['estudiante', 'docente', 'administrativo'];
-
-export default function Lectores() {
-  const setTitle = useOutletContext<((title: string) => void) | undefined>();
-  const { authFetch } = useAuth();
-
-  const [view, setView] = useState<LectorView>('activos');
-  const [items, setItems] = useState<Lector[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [editing, setEditing] = useState<Lector | null>(null);
-  const [form, setForm] = useState<LectorForm>({
-    LecDni: '',
-    LecNom: '',
-    LecApe: '',
-    LecTip: 'estudiante',
-    LecEma: '',
+/* ================= FORMULARIO ================= */
+function LectorForm({
+  initial,
+  onSave,
+  onCancel,
+}: {
+  initial: any | null;
+  onSave: (data: any) => void;
+  onCancel: () => void;
+}) {
+  const [form, setForm] = useState({
+    LecNom: "",
+    LecApe: "",
+    LecDni: "",
+    LecEma: "",
+    LecTip: "estudiante",
   });
 
   useEffect(() => {
-    setTitle?.('Lectores');
-  }, [setTitle]);
-
-  useEffect(() => {
-    if (!editing) {
-      setForm({ LecDni: '', LecNom: '', LecApe: '', LecTip: 'estudiante', LecEma: '' });
-      return;
-    }
+    if (!initial) return;
     setForm({
-      LecDni: editing.LecDni,
-      LecNom: editing.LecNom,
-      LecApe: editing.LecApe,
-      LecTip: editing.LecTip,
-      LecEma: editing.LecEma ?? '',
+      LecNom: initial.LecNom ?? "",
+      LecApe: initial.LecApe ?? "",
+      LecDni: initial.LecDni ?? "",
+      LecEma: initial.LecEma ?? "",
+      LecTip: initial.LecTip ?? "estudiante",
     });
-  }, [editing]);
+  }, [initial]);
 
-  const endpoints = useMemo(
-    () => [
-      { method: 'GET', path: '/api/lectores', note: 'Listar activos' },
-      { method: 'GET', path: '/api/lectores/desactivados', note: 'Listar desactivados' },
-      { method: 'GET', path: '/api/lectores/:id', note: 'Detalle' },
-      { method: 'POST', path: '/api/lectores', note: 'Crear' },
-      { method: 'PATCH', path: '/api/lectores/:id', note: 'Editar' },
-      { method: 'PATCH', path: '/api/lectores/reactivar/:id', note: 'Reactivar' },
-      { method: 'DELETE', path: '/api/lectores/:id', note: 'Desactivar' },
-    ],
-    [],
-  );
+  const submit = () => {
+    if (!form.LecNom || !form.LecApe || !form.LecDni) return;
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-
-    const listUrl = view === 'activos' ? '/api/lectores' : '/api/lectores/desactivados';
-    const res = await authFetch(listUrl);
-    const data: unknown = await res.json().catch(() => ([] as unknown));
-
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo cargar lectores'));
-      setItems([]);
-      setLoading(false);
-      return;
-    }
-
-    setItems(Array.isArray(data) ? (data as Lector[]) : []);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
-
-  const submit = async () => {
-    setLoading(true);
-    setError(null);
-
-    const payload = {
-      LecDni: form.LecDni.trim(),
+    onSave({
       LecNom: form.LecNom.trim(),
       LecApe: form.LecApe.trim(),
+      LecDni: form.LecDni.trim(),
+      LecEma: form.LecEma.trim() || undefined,
       LecTip: form.LecTip,
-      LecEma: form.LecEma.trim() ? form.LecEma.trim() : undefined,
-    };
-
-    const url = editing ? `/api/lectores/${editing.LecId}` : '/api/lectores';
-    const method = editing ? 'PATCH' : 'POST';
-
-    const res = await authFetch(url, { method, body: JSON.stringify(payload) });
-    const data: unknown = await res.json().catch(() => ({} as unknown));
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo guardar el lector'));
-      setLoading(false);
-      return;
-    }
-
-    setEditing(null);
-    await load();
-  };
-
-  const deactivate = async (id: number) => {
-    setLoading(true);
-    setError(null);
-    const res = await authFetch(`/api/lectores/${id}`, { method: 'DELETE' });
-    const data: unknown = await res.json().catch(() => ({} as unknown));
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo desactivar el lector'));
-      setLoading(false);
-      return;
-    }
-    await load();
-  };
-
-  const reactivate = async (id: number) => {
-    setLoading(true);
-    setError(null);
-    const res = await authFetch(`/api/lectores/reactivar/${id}`, { method: 'PATCH' });
-    const data: unknown = await res.json().catch(() => ({} as unknown));
-    if (!res.ok) {
-      setError(errorMessage(data, 'No se pudo reactivar el lector'));
-      setLoading(false);
-      return;
-    }
-    await load();
+    });
   };
 
   return (
     <>
-      {error && <div className="error">{error}</div>}
+      <h3>{initial ? "Editar lector" : "Registrar lector"}</h3>
 
-      <div className="filters-card">
-        <select className="input" value={view} onChange={(e) => setView(e.target.value as LectorView)} disabled={loading}>
-          <option value="activos">Activos</option>
-          <option value="desactivados">Desactivados</option>
-        </select>
-
+      <div className="form-grid">
         <input
-          className="input"
-          placeholder="DNI (LecDni)"
-          value={form.LecDni}
-          onChange={(e) => setForm((f) => ({ ...f, LecDni: e.target.value }))}
-          disabled={loading || view === 'desactivados'}
-        />
-
-        <select
-          className="input"
-          value={form.LecTip}
-          onChange={(e) => setForm((f) => ({ ...f, LecTip: e.target.value as LectorTipo }))}
-          disabled={loading || view === 'desactivados'}
-        >
-          {lectorTipos.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-
-        <input
-          className="input"
-          placeholder="Nombres (LecNom)"
+          placeholder="Nombres"
           value={form.LecNom}
-          onChange={(e) => setForm((f) => ({ ...f, LecNom: e.target.value }))}
-          disabled={loading || view === 'desactivados'}
+          onChange={(e) => setForm({ ...form, LecNom: e.target.value })}
         />
         <input
-          className="input"
-          placeholder="Apellidos (LecApe)"
+          placeholder="Apellidos"
           value={form.LecApe}
-          onChange={(e) => setForm((f) => ({ ...f, LecApe: e.target.value }))}
-          disabled={loading || view === 'desactivados'}
+          onChange={(e) => setForm({ ...form, LecApe: e.target.value })}
         />
         <input
-          className="input"
-          placeholder="Correo (opcional)"
-          value={form.LecEma}
-          onChange={(e) => setForm((f) => ({ ...f, LecEma: e.target.value }))}
-          disabled={loading || view === 'desactivados'}
+          placeholder="DNI"
+          value={form.LecDni}
+          onChange={(e) => setForm({ ...form, LecDni: e.target.value })}
         />
-
-        <button className="btn" onClick={() => void submit()} disabled={loading || view === 'desactivados'}>
-          {editing ? 'Guardar' : 'Crear'}
-        </button>
-
-        {editing && (
-          <button className="btn secondary" onClick={() => setEditing(null)} disabled={loading}>
-            Cancelar
-          </button>
-        )}
+        <input
+          placeholder="Correo"
+          value={form.LecEma}
+          onChange={(e) => setForm({ ...form, LecEma: e.target.value })}
+        />
+        <select
+          value={form.LecTip}
+          onChange={(e) => setForm({ ...form, LecTip: e.target.value })}
+        >
+          <option value="estudiante">Estudiante</option>
+          <option value="docente">Docente</option>
+          <option value="administrativo">Administrativo</option>
+        </select>
       </div>
 
-      <div className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>DNI</th>
-              <th>Tipo</th>
-              <th>Correo</th>
-              <th>Activo</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((l) => (
-              <tr key={l.LecId}>
-                <td>{l.LecId}</td>
-                <td>{`${l.LecNom} ${l.LecApe}`}</td>
-                <td>{l.LecDni}</td>
-                <td>{l.LecTip}</td>
-                <td>{l.LecEma || '—'}</td>
-                <td>{l.LecAct ? 'Sí' : 'No'}</td>
-                <td className="actions">
-                  <button
-                    title="Editar"
-                    onClick={() => setEditing(l)}
-                    disabled={loading || view === 'desactivados'}
-                  >
-                    ✏️
-                  </button>
-                  {view === 'activos' ? (
-                    <button title="Desactivar" onClick={() => void deactivate(l.LecId)} disabled={loading}>
-                      🗑️
-                    </button>
-                  ) : (
-                    <button title="Reactivar" onClick={() => void reactivate(l.LecId)} disabled={loading}>
-                      ♻️
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {!loading && items.length === 0 && (
-              <tr>
-                <td colSpan={7}>Sin registros</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="endpoints">
-        <h3>Endpoints</h3>
-        {endpoints.map((e) => (
-          <div className="endpoint-row" key={`${e.method}-${e.path}`}>
-            <span className={`badge ${e.method.toLowerCase()}`}>{e.method}</span>
-            <span className="code">{e.path}</span>
-            <span style={{ marginLeft: 'auto', color: '#555' }}>{e.note}</span>
-          </div>
-        ))}
+      <div className="modal-actions">
+        <button className="btn" onClick={submit}>Guardar</button>
+        <button className="btn secondary" onClick={onCancel}>Cancelar</button>
       </div>
     </>
   );
 }
+
+/* ================= COMPONENTE PRINCIPAL ================= */
+export default function Lectores() {
+  const setTitle = useOutletContext<(title: string) => void>();
+  const { authFetch } = useAuth();
+
+  useEffect(() => {
+    setTitle?.("Lectores");
+  }, [setTitle]);
+
+  /* ===== ESTADO ===== */
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // filtros
+  const [search, setSearch] = useState("");
+  const [tipo, setTipo] = useState("");
+  const [fecha, setFecha] = useState("");
+
+  // modales
+  const [modal, setModal] =
+    useState<null | "view" | "edit" | "new" | "delete">(null);
+  const [selected, setSelected] = useState<any | null>(null);
+
+  // paginación
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  /* ===== LOAD ===== */
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await authFetch("/api/lectores");
+      const data = await res.json();
+      setItems(Array.isArray(data) ? data : []);
+    } catch {
+      setError("No se pudo cargar lectores");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  // reset página cuando cambian filtros
+  useEffect(() => {
+    setPage(1);
+  }, [search, tipo, fecha, pageSize]);
+
+  /* ===== FILTROS ===== */
+  const filteredItems = useMemo(() => {
+    return items.filter((l) => {
+      const matchText =
+        `${l.LecNom} ${l.LecApe}`.toLowerCase().includes(search.toLowerCase()) ||
+        l.LecDni.includes(search) ||
+        (l.LecEma ?? "").toLowerCase().includes(search.toLowerCase());
+
+      const matchTipo = tipo ? l.LecTip === tipo : true;
+
+      const matchFecha = fecha
+        ? new Date(l.LecFecCre).toISOString().slice(0, 10) === fecha
+        : true;
+
+      return matchText && matchTipo && matchFecha;
+    });
+  }, [items, search, tipo, fecha]);
+
+  /* ===== PAGINACIÓN ===== */
+  const totalPages = Math.ceil(filteredItems.length / pageSize);
+
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, page, pageSize]);
+
+  /* ===== CRUD ===== */
+  const save = async (payload: any) => {
+    const isEdit = modal === "edit" && selected;
+
+    const method = isEdit ? "PATCH" : "POST";
+    const url = isEdit
+      ? `/api/lectores/${selected.LecId}`
+      : "/api/lectores";
+
+    await authFetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    setModal(null);
+    setSelected(null);
+    await load();
+  };
+
+  const remove = async () => {
+    if (!selected) return;
+
+    await authFetch(`/api/lectores/${selected.LecId}`, {
+      method: "DELETE",
+    });
+
+    setModal(null);
+    setSelected(null);
+    await load();
+  };
+
+  /* ===== UI ===== */
+  return (
+    <>
+      {error && <div className="error">{error}</div>}
+
+      {/* ===== FILTROS ===== */}
+      <div className="filters-card">
+        <h3 className="card-title">Filtros</h3>
+
+        <input
+          className="input"
+          placeholder="Buscar por nombre, DNI o correo"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <input
+          className="input"
+          type="date"
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+        />
+
+        <select
+          className="input"
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value)}
+        >
+          <option value="">Todos</option>
+          <option value="estudiante">Estudiante</option>
+          <option value="docente">Docente</option>
+          <option value="administrativo">Administrativo</option>
+        </select>
+
+        <button
+          className="btn-new"
+          onClick={() => {
+            setSelected(null);
+            setModal("new");
+          }}
+        >
+          ➕ Nuevo
+        </button>
+      </div>
+
+      {/* ===== TABLA ===== */}
+      <div className="table-card">
+        <h3 className="card-title">Listado de Lectores</h3>
+
+        <div className="table-toolbar">
+          <span>Mostrar</span>
+          <select
+            className="input-small"
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+          </select>
+          <span>registros</span>
+        </div>
+
+        <div className="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>DNI</th>
+                <th>Correo</th>
+                <th>Tipo</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedItems.map((l, i) => (
+                <tr key={l.LecId}>
+                  <td>{(page - 1) * pageSize + i + 1}</td>
+                  <td>{l.LecNom} {l.LecApe}</td>
+                  <td>{l.LecDni}</td>
+                  <td>{l.LecEma || "—"}</td>
+                  <td>{l.LecTip}</td>
+                  <td className="actions">
+                    <button onClick={() => { setSelected(l); setModal("view"); }}>👁️</button>
+                    <button onClick={() => { setSelected(l); setModal("edit"); }}>✏️</button>
+                    <button onClick={() => { setSelected(l); setModal("delete"); }}>🗑️</button>
+                  </td>
+                </tr>
+              ))}
+
+              {!loading && paginatedItems.length === 0 && (
+                <tr>
+                  <td colSpan={6}>Sin registros</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ===== PAGINACIÓN ===== */}
+      <div className="pagination">
+        <button
+          className="btn-secondary"
+          disabled={page === 1}
+          onClick={() => setPage((p) => p - 1)}
+        >
+          ⬅ Anterior
+        </button>
+
+        <span>Página {page} de {totalPages || 1}</span>
+
+        <button
+          className="btn-secondary"
+          disabled={page === totalPages || totalPages === 0}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          Siguiente ➡
+        </button>
+      </div>
+
+      {/* ===== MODALES ===== */}
+      {modal && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            {modal === "view" && selected && (
+              <>
+                <h3>Detalle del lector</h3>
+                <p><b>Nombre:</b> {selected.LecNom} {selected.LecApe}</p>
+                <p><b>DNI:</b> {selected.LecDni}</p>
+                <p><b>Correo:</b> {selected.LecEma || "—"}</p>
+                <p><b>Tipo:</b> {selected.LecTip}</p>
+                <button className="btn" onClick={() => setModal(null)}>Cerrar</button>
+              </>
+            )}
+
+            {(modal === "new" || modal === "edit") && (
+              <LectorForm
+                initial={modal === "edit" ? selected : null}
+                onSave={save}
+                onCancel={() => setModal(null)}
+              />
+            )}
+
+            {modal === "delete" && selected && (
+              <>
+                <h3>¿Eliminar lector?</h3>
+                <p>Esta acción desactiva el registro</p>
+                <button className="btn danger" onClick={remove}>Eliminar</button>
+                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
