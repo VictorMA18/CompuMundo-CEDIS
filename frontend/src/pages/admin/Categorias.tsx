@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import type { Categoria } from "../../types/categoria";
-import "./AdminCrud.css";
+import "./AdminCrud.css"; // Asegúrate de que este archivo CSS existe
 
 /* ================= FORMULARIO ================= */
 function CategoriaForm({
@@ -11,29 +11,40 @@ function CategoriaForm({
   onCancel,
 }: {
   initial: Categoria | null;
-  onSave: (data: any) => void;
+  onSave: (data: any) => Promise<void>;
   onCancel: () => void;
 }) {
   const [form, setForm] = useState({
     CatNom: "",
     CatDes: "",
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (!initial) return;
+    if (!initial) {
+      setForm({ CatNom: "", CatDes: "" });
+      return;
+    }
     setForm({
       CatNom: initial.CatNom ?? "",
       CatDes: initial.CatDes ?? "",
     });
   }, [initial]);
 
-  const submit = () => {
-    if (!form.CatNom.trim()) return;
+  const submit = async () => {
+    // Validar que el nombre no esté vacío
+    if (isSaving || !form.CatNom.trim()) return; 
 
-    onSave({
-      CatNom: form.CatNom.trim(),
-      CatDes: form.CatDes.trim() || undefined,
-    });
+    setIsSaving(true);
+    try {
+      await onSave({
+        CatNom: form.CatNom.trim(),
+        CatDes: form.CatDes.trim() || undefined,
+      });
+    } finally {
+      // Si onSave falla (y muestra el modal de error), isSaving se desactiva
+      setIsSaving(false); 
+    }
   };
 
   return (
@@ -45,19 +56,21 @@ function CategoriaForm({
           placeholder="Nombre de la categoría"
           value={form.CatNom}
           onChange={(e) => setForm({ ...form, CatNom: e.target.value })}
+          disabled={isSaving}
         />
         <input
           placeholder="Descripción (opcional)"
           value={form.CatDes}
           onChange={(e) => setForm({ ...form, CatDes: e.target.value })}
+          disabled={isSaving}
         />
       </div>
 
       <div className="modal-actions">
-        <button className="btn" onClick={submit}>
-          Guardar
+        <button className="btn" onClick={submit} disabled={isSaving}>
+          {isSaving ? "Guardando..." : "Guardar"}
         </button>
-        <button className="btn secondary" onClick={onCancel}>
+        <button className="btn secondary" onClick={onCancel} disabled={isSaving}>
           Cancelar
         </button>
       </div>
@@ -87,14 +100,16 @@ export default function Categorias() {
   const [modal, setModal] =
     useState<null | "view" | "new" | "edit" | "delete" | "reactivate">(null);
   const [selected, setSelected] = useState<Categoria | null>(null);
+  const [errorModal, setErrorModal] = useState<string | null>(null); 
 
   // paginación
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  /* ===== LOAD ===== */
+  /* ===== LOAD (Cargar datos) ===== */
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       const url =
         view === "activos"
@@ -102,9 +117,13 @@ export default function Categorias() {
           : "/api/categorias/desactivadas";
 
       const res = await authFetch(url);
+      if (!res.ok) {
+        throw new Error(`No se pudo cargar: ${res.status}`);
+      }
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);
-    } catch {
+    } catch (e) {
+      console.error(e);
       setError("No se pudo cargar categorías");
     } finally {
       setLoading(false);
@@ -120,20 +139,69 @@ export default function Categorias() {
     setPage(1);
   }, [search, pageSize]);
 
-  /* ===== FILTROS ===== */
+  /* ===== FILTROS / PAGINACIÓN ===== */
   const filteredItems = useMemo(() => {
     return items.filter((c) =>
       c.CatNom.toLowerCase().includes(search.toLowerCase())
     );
   }, [items, search]);
 
-  /* ===== PAGINACIÓN ===== */
   const totalPages = Math.ceil(filteredItems.length / pageSize);
 
   const paginatedItems = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredItems.slice(start, start + pageSize);
   }, [filteredItems, page, pageSize]);
+
+  /* ===== MANEJO DE ERRORES DEL BACKEND (Versión Final Optimizada) ===== */
+  const handleBackendError = async (res: Response) => {
+    if (!res.ok) {
+      let errorMessage = `Error ${res.status}: Operación fallida.`;
+      let textBody = '';
+
+      try {
+        const resClone = res.clone();
+        textBody = await resClone.text();
+        const errorData = JSON.parse(textBody);
+
+        let rawMessage = null;
+
+        // 1. Intentar obtener el mensaje del campo 'message' principal (Formato estándar de NestJS)
+        if (errorData && errorData.message) {
+            rawMessage = errorData.message;
+        }
+
+        // 2. Si el mensaje principal no es descriptivo, buscar en el objeto 'error' anidado
+        if (!rawMessage && errorData.error && errorData.error.message) {
+             rawMessage = errorData.error.message;
+        }
+        
+        // 3. Si encontramos un mensaje descriptivo, lo formateamos
+        if (rawMessage) {
+            errorMessage = Array.isArray(rawMessage) 
+                ? rawMessage.join(", ") 
+                : rawMessage;
+        } else {
+            // Mensaje de respaldo si el JSON es válido pero no tiene el campo 'message' esperado
+            errorMessage = `Error ${res.status}: ${errorData.error || errorData.statusCode || 'Respuesta desconocida'}.`;
+        }
+
+      } catch (e) {
+          // Si falla al parsear el JSON
+          if (textBody) {
+               errorMessage = `Error ${res.status}: ${textBody}`;
+          } else {
+               errorMessage = `Error ${res.status}: Error de conexión o servidor.`;
+          }
+      }
+      
+      // Mostrar SOLO el mensaje descriptivo
+      setErrorModal(errorMessage);
+      
+      // Lanzamos para detener la ejecución de la función CRUD
+      throw new Error(errorMessage);
+    }
+  };
 
   /* ===== CRUD ===== */
   const save = async (payload: any) => {
@@ -144,34 +212,61 @@ export default function Categorias() {
       ? `/api/categorias/${selected!.CatId}`
       : "/api/categorias";
 
-    await authFetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const res = await authFetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    setModal(null);
-    setSelected(null);
-    await load();
+      await handleBackendError(res); 
+
+      // Si todo va bien
+      setModal(null);
+      setSelected(null);
+      await load();
+    } catch (e) {
+      console.error("Error en la operación SAVE:", e);
+    }
   };
 
   const deactivate = async () => {
     if (!selected) return;
-    await authFetch(`/api/categorias/${selected.CatId}`, { method: "DELETE" });
-    setModal(null);
-    setSelected(null);
-    await load();
+    try {
+      const res = await authFetch(`/api/categorias/${selected.CatId}`, { method: "DELETE" });
+      
+      await handleBackendError(res); 
+
+      // Si todo va bien
+      setModal(null);
+      setSelected(null);
+      await load();
+    } catch (e) {
+      console.error("Error en la operación DEACTIVATE:", e);
+    }
   };
 
   const reactivate = async () => {
     if (!selected) return;
-    await authFetch(`/api/categorias/reactivar/${selected.CatId}`, {
-      method: "PATCH",
-    });
-    setModal(null);
-    setSelected(null);
-    await load();
+    try {
+      const res = await authFetch(`/api/categorias/reactivar/${selected.CatId}`, {
+        method: "PATCH",
+      });
+
+      await handleBackendError(res);
+      
+      // Si todo va bien
+      setModal(null);
+      setSelected(null);
+      await load();
+    } catch (e) {
+      console.error("Error en la operación REACTIVATE:", e);
+    }
   };
+
+  const closeErrorModal = () => {
+    setErrorModal(null);
+  }
 
   /* ===== UI ===== */
   return (
@@ -290,7 +385,7 @@ export default function Categorias() {
         </button>
       </div>
 
-      {/* ===== MODALES ===== */}
+      {/* ===== MODALES DE OPERACIÓN ===== */}
       {modal && (
         <div className="modal-backdrop">
           <div className="modal">
@@ -331,7 +426,17 @@ export default function Categorias() {
           </div>
         </div>
       )}
+
+      {/* ===== MODAL DE ERROR ===== */}
+      {errorModal && (
+        <div className="modal-backdrop">
+          <div className="modal error-modal">
+            <h3 className="error-title">❌ Error en la Operación</h3>
+            <p>{errorModal}</p>
+            <button className="btn" onClick={closeErrorModal}>Aceptar</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
-
