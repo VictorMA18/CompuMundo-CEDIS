@@ -47,7 +47,7 @@ model TB_MATERIAL_BIBLIOGRAFICO {
   MatBibCod         String                @unique @db.VarChar(50)
   MatBibTit         String                @db.VarChar(200)
   CatId             Int
-  MatBibFor         FormatoMaterial       @default(NINGUNO)      
+  MatBibFor         FormatoMaterial       @default(NINGUNO)
   MatBibFecPub      DateTime?             @db.Date
   MatBibFecCre      DateTime              @default(now())
   MatBibFecAct      DateTime              @default(now()) @updatedAt
@@ -67,8 +67,8 @@ model TB_MATERIAL_FISICO {
   MatFisEst             String                    @db.VarChar(20)
   MatFisUbi             String                    @db.VarChar(100)
   MatFisAct             Boolean                   @default(true)
-  MatFisFecCre          DateTime                  @default(now())
   MatFisFecAct          DateTime                  @default(now()) @updatedAt
+  MatFisFecCre          DateTime                  @default(now())
   materialBibliografico TB_MATERIAL_BIBLIOGRAFICO @relation(fields: [MatBibId], references: [MatBibId])
   prestamosDetalle      TB_PRESTAMO_DETALLE[]
 
@@ -81,8 +81,8 @@ model TB_MATERIAL_VIRTUAL {
   MatVirUrlAcc          String                    @db.VarChar(255)
   MatVirForArc          String                    @db.VarChar(50)
   MatVirAct             Boolean                   @default(true)
-  MatVirFecCre          DateTime                  @default(now())
   MatVirFecAct          DateTime                  @default(now()) @updatedAt
+  MatVirFecCre          DateTime                  @default(now())
   materialBibliografico TB_MATERIAL_BIBLIOGRAFICO @relation(fields: [MatBibId], references: [MatBibId])
   prestamosDetalle      TB_PRESTAMO_DETALLE[]
 }

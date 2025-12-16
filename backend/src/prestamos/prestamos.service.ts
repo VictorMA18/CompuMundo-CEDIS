@@ -94,13 +94,25 @@ export class PrestamosService {
   }
     
   async findAll() {
-      return this.prisma.tB_PRESTAMO.findMany({
-          include: { 
-              lector: true, 
-              usuario: true,
-              detalles: true 
+    return this.prisma.tB_PRESTAMO.findMany({
+      include: {
+        lector: true,
+        usuario: true,
+        detalles: {
+          include: {
+            materialFisico: true,
+            materialBibliografico: {
+              include: {
+                categoria: true 
+              }
+            }
           }
-      });
+        }
+      },
+      orderBy: {
+        PreFecPre: 'desc'
+      }
+    });
   }
 
   async devolverDetalle(detalleId: number, devolverDto: DevolverPrestamoDto) {

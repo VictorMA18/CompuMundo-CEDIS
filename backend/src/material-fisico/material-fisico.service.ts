@@ -13,6 +13,13 @@ const materialFisicoSelect = {
   MatFisEst: true,
   MatFisUbi: true,
   MatFisAct: true,
+  materialBibliografico: {
+    select: {
+      MatBibId: true,
+      MatBibTit: true, 
+      MatBibCod: true
+    }
+  }
 };
 
 @Injectable()

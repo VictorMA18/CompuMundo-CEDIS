@@ -144,7 +144,7 @@ export class MaterialBibliograficoService {
         },
         materialesFisicos: {
           where: { MatFisAct: true },
-          select: { MatFisCodEje: true,MatFisEst: true },
+          select: { MatFisCodEje: true, MatFisEst: true },
         },
         materialVirtual: {
           where: { MatVirAct: true },
@@ -258,7 +258,7 @@ export class MaterialBibliograficoService {
     };
   }
 
-  async update(
+async update(
     id: number,
     updateMaterialBibliograficoDto: UpdateMaterialBibliograficoDto,
     prismaClient: PrismaService | Prisma.TransactionClient = this.prisma
@@ -317,15 +317,18 @@ export class MaterialBibliograficoService {
         updateMaterialBibliograficoDto.MatBibAno = true;
       }
 
+      const {autores, ...data } = updateMaterialBibliograficoDto
+
       const updatedMaterial = await tx.tB_MATERIAL_BIBLIOGRAFICO.update({
         where: { MatBibId: id },
-        data: updateMaterialBibliograficoDto,
+        data: data,
         select: materialSelect,
       });
 
       await this.recalcularFormato(id, tx);
 
       return this.withAutores(updatedMaterial, tx);
+      
     }, prismaClient);
   }
 

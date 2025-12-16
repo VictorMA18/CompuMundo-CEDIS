@@ -4,23 +4,22 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  const adminEmail = 'admin@admin.com';
-  const adminExists = await prisma.tB_USUARIO.findUnique({
-    where: { UsuEma: adminEmail },
-  });
+  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@admin.com';
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'admin123';
 
-  if (!adminExists) {
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+  const admin = await prisma.tB_USUARIO.findUnique({ where: { UsuEma: adminEmail } });
+
+  if (!admin) {
+    const hashed = await bcrypt.hash(adminPassword, 10);
     await prisma.tB_USUARIO.create({
       data: {
         UsuNom: 'Administrador',
         UsuEma: adminEmail,
-        UsuCon: hashedPassword,
+        UsuCon: hashed,
         UsuTip: 'administrador',
         UsuAct: true,
       },
     });
-    console.log('Usuario administrador creado');
   } else {
     console.log('El usuario administrador ya existe');
   }
