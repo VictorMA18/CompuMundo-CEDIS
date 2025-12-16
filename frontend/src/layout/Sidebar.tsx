@@ -13,7 +13,7 @@ export default function Sidebar() {
   };
 
   const menu = [
-    { label: 'Dashboard', path: '/app', icon: '🏠' },
+    { label: 'Home', path: '/app', icon: '🏠' },
     { label: 'Préstamos', path: '/app/prestamos', icon: '📚' },
     { label: 'Lectores', path: '/app/lectores', icon: '👥' },
     { label: 'Documentos', path: '/app/documentos', icon: '📑' },
@@ -23,6 +23,7 @@ export default function Sidebar() {
     { label: 'Usuarios', path: '/app/usuarios', icon: '👤' },
     { label: 'Categorías', path: '/app/configuracion/categorias', icon: '🏷️' },
     { label: 'Reportes', path: '/app/reportes', icon: '📑' },
+    { label: 'Dashboard', path: '/app/dashboard', icon: '📦' },
   ];
 
   return (

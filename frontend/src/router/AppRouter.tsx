@@ -13,6 +13,7 @@ import Autores from '../pages/admin/Autores';
 import MaterialFisico from '../pages/admin/MaterialFisico';
 import MaterialVirtual from '../pages/admin/MaterialVirtual';
 import Reportes from '../pages/admin/Reportes';
+import Dashboard from '../pages/admin/Dashboard';
 
 function LegacyRedirect({ fromBase }: { fromBase: string }) {
   const { pathname } = useLocation();
@@ -47,7 +48,9 @@ export default function AppRouter() {
         <Route path="autores" element={<Autores />} />
         <Route path="material-fisico" element={<MaterialFisico />} />
         <Route path="material-virtual" element={<MaterialVirtual />} />
-        <Route path="reportes" element={<Reportes />} />
+        <Route path="reportes" element={<Reportes />} />    
+        <Route path="dashboard" element={<Dashboard />} />
+
       </Route>
 
       {/* Legacy paths (antes separados por rol) */}
