@@ -5,9 +5,8 @@ import "./AdminCrud.css";
 
 /* ================= TIPOS ================= */
 type AutorRef = { AutId: number; AutNom: string; AutApe: string; AutDoc: string };
-type ApiError = { message?: string | string[] };
-type Categoria = { CatId: number; CatNom: string }; 
-type Autor = { AutId: number; AutNom: string; AutApe: string; AutDoc: string }; 
+type Categoria = { CatId: number; CatNom: string };
+type Autor = { AutId: number; AutNom: string; AutApe: string; AutDoc: string };
 
 type MaterialBibliografico = {
   MatBibId: number;
@@ -34,16 +33,8 @@ type ModalState =
   | "reactivate"
   | "recalculate";
 
-function errorMessage(data: unknown, fallback: string) {
-  const err = data as ApiError;
-  if (Array.isArray(err?.message)) return err.message.join(", ");
-  if (typeof err?.message === "string" && err.message.trim()) return err.message;
-  return fallback;
-}
-
 /* ================= HOOKS DE DATOS RELACIONADOS ================= */
 
-// Hook para obtener categorías
 const useCategories = (authFetch: any) => {
   const [categories, setCategories] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +42,7 @@ const useCategories = (authFetch: any) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await authFetch("/api/categorias"); 
+        const res = await authFetch("/api/categorias");
         if (res.ok) {
           const data = await res.json();
           setCategories(data || []);
@@ -63,38 +54,153 @@ const useCategories = (authFetch: any) => {
       }
     };
     void fetchCategories();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return { categories, loading };
 };
 
-// Hook para obtener autores (activos)
 const useAutores = (authFetch: any) => {
-    const [autores, setAutores] = useState<Autor[]>([]);
-    const [loading, setLoading] = useState(true);
-  
-    useEffect(() => {
-      const fetchAutores = async () => {
-        try {
-          const res = await authFetch("/api/autores"); 
-          if (res.ok) {
-            const data = await res.json();
-            setAutores(data || []);
-          }
-        } catch (e) {
-          console.error("No se pudieron cargar los autores:", e);
-        } finally {
-          setLoading(false);
+  const [autores, setAutores] = useState<Autor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAutores = async () => {
+      try {
+        const res = await authFetch("/api/autores");
+        if (res.ok) {
+          const data = await res.json();
+          setAutores(data || []);
         }
-      };
-      void fetchAutores();
+      } catch (e) {
+        console.error("No se pudieron cargar los autores:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void fetchAutores();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-    return { autores, loading };
+  }, []);
+  return { autores, loading };
+};
+
+
+/* ================= COMPONENTES DE FORMULARIO ================= */
+
+function AutorSelector({
+  allAutores,
+  selectedIds,
+  onChange,
+}: {
+  allAutores: Autor[];
+  selectedIds: number[];
+  onChange: (ids: number[]) => void;
+}) {
+  const availableAutores = useMemo(() => {
+    return allAutores.filter(aut => !selectedIds.includes(aut.AutId));
+  }, [allAutores, selectedIds]);
+
+  const selectedAutores = useMemo(() => {
+    return allAutores.filter(aut => selectedIds.includes(aut.AutId));
+  }, [allAutores, selectedIds]);
+
+  const [tempSelectedId, setTempSelectedId] = useState(
+    availableAutores.length > 0 ? availableAutores[0].AutId : 0
+  );
+
+  useEffect(() => {
+    if (!availableAutores.some(aut => aut.AutId === tempSelectedId) && availableAutores.length > 0) {
+      setTempSelectedId(availableAutores[0].AutId);
+    } else if (availableAutores.length === 0) {
+      setTempSelectedId(0);
+    }
+  }, [availableAutores, tempSelectedId]);
+
+
+  const addAutor = () => {
+    if (tempSelectedId !== 0 && !selectedIds.includes(tempSelectedId)) {
+      onChange([...selectedIds, tempSelectedId]);
+    }
   };
 
+  const removeAutor = (idToRemove: number) => {
+    onChange(selectedIds.filter(id => id !== idToRemove));
+  };
 
-/* ================= FORMULARIO CORREGIDO (FINAL) ================= */
+  return (
+    <div style={{ border: '1px solid #ccc', padding: '10px', borderRadius: '5px' }}>
+      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+        Autores
+      </label>
+
+      <div style={{ display: 'flex', gap: '5px', marginBottom: '10px' }}>
+        <select
+          className="input"
+          value={tempSelectedId}
+          onChange={(e) => setTempSelectedId(Number(e.target.value))}
+          disabled={availableAutores.length === 0}
+          style={{ flexGrow: 1 }}
+        >
+          {availableAutores.length === 0 ? (
+            <option value={0}>No hay más autores disponibles</option>
+          ) : (
+            availableAutores.map(aut => (
+              <option key={aut.AutId} value={aut.AutId}>
+                {`${aut.AutNom} ${aut.AutApe} (${aut.AutDoc})`}
+              </option>
+            ))
+          )}
+        </select>
+        <button
+          className="btn-new"
+          onClick={addAutor}
+          disabled={tempSelectedId === 0}
+          style={{ whiteSpace: 'nowrap' }}
+        >
+          + Agregar
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', minHeight: '30px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+        {selectedAutores.length === 0 ? (
+          <span style={{ color: '#888' }}>Sin autores seleccionados (Documento anónimo si se deja vacío)</span>
+        ) : (
+          selectedAutores.map(aut => (
+            <span
+              key={aut.AutId}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                backgroundColor: '#007bff',
+                color: 'white',
+                borderRadius: '15px',
+                padding: '5px 10px',
+                fontSize: '0.85em',
+              }}
+            >
+              {`${aut.AutNom} ${aut.AutApe}`}
+              <button
+                type="button"
+                onClick={() => removeAutor(aut.AutId)}
+                style={{
+                  marginLeft: '5px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '1em',
+                  padding: '0 2px',
+                }}
+              >
+                &times;
+              </button>
+            </span>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DocumentoForm({
   initial,
   onSave,
@@ -103,10 +209,10 @@ function DocumentoForm({
   autores,
 }: {
   initial: MaterialBibliografico | null;
-  onSave: (data: any) => void;
+  onSave: (data: any) => Promise<void>;
   onCancel: () => void;
   categories: Categoria[];
-  autores: Autor[]; 
+  autores: Autor[];
 }) {
   const [form, setForm] = useState({
     MatBibCod: "",
@@ -114,113 +220,103 @@ function DocumentoForm({
     CatId: categories.length > 0 ? categories[0].CatId : 0,
     selectedAutoresIds: [] as number[],
   });
+  const [isSaving, setIsSaving] = useState(false);
+
 
   useEffect(() => {
     if (initial) {
-        setForm({
-            MatBibCod: initial.MatBibCod ?? "",
-            MatBibTit: initial.MatBibTit ?? "",
-            CatId: initial.CatId,
-            selectedAutoresIds: (initial.autoresMaterial || []).map(a => a.autor.AutId),
-        });
+      setForm({
+        MatBibCod: initial.MatBibCod ?? "",
+        MatBibTit: initial.MatBibTit ?? "",
+        CatId: initial.CatId,
+        selectedAutoresIds: (initial.autoresMaterial || []).map(a => a.autor.AutId),
+      });
     } else if (categories.length > 0 && form.CatId === 0) {
-        setForm(f => ({ ...f, CatId: categories[0].CatId }));
+      setForm(f => ({ ...f, CatId: categories[0].CatId }));
     }
   }, [initial, categories]);
 
-  const handleAutoresChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const options = Array.from(e.target.options);
-    const selected = options.filter(opt => opt.selected).map(opt => Number(opt.value));
-    setForm(f => ({ ...f, selectedAutoresIds: selected }));
+  const handleAutorIdsChange = (ids: number[]) => {
+    setForm(f => ({ ...f, selectedAutoresIds: ids }));
   };
 
-  const submit = () => {
-    if (!form.MatBibCod || !form.MatBibTit || !form.CatId) return;
+  const submit = async () => {
+    if (isSaving || !form.MatBibCod || !form.MatBibTit || !form.CatId) return;
 
-    // 🏆 SOLUCIÓN FINAL AL ERROR 400: 'property AutId should not exist' y 'AutDoc must be a string'
-    // 1. Encontramos los objetos completos de autores seleccionados.
-    const selectedAutores = autores.filter(aut => 
-        form.selectedAutoresIds.includes(aut.AutId)
+    const selectedAutores = autores.filter(aut =>
+      form.selectedAutoresIds.includes(aut.AutId)
     );
 
-    // 2. Mapeamos para crear el payload final: solo el campo AutDoc (Documento).
     const autoresPayload = selectedAutores.map(aut => ({
-        AutDoc: aut.AutDoc, 
+      AutDoc: aut.AutDoc,
     }));
     
-    // Aquí podrías agregar valores por defecto que el backend requiera si es un POST (nuevo documento),
-    // como MatBibAno: false, MatBibFor: "NINGUNO", MatBibAct: true.
-
-    onSave({
-      MatBibCod: form.MatBibCod.trim(),
-      MatBibTit: form.MatBibTit.trim(),
-      CatId: form.CatId, 
-      autores: autoresPayload, // <-- ¡Payload de autores listo para NestJS!
-    });
+    setIsSaving(true);
+    try {
+      await onSave({
+        MatBibCod: form.MatBibCod.trim(),
+        MatBibTit: form.MatBibTit.trim(),
+        CatId: form.CatId,
+        autores: autoresPayload.length > 0 ? autoresPayload : null,
+        MatBibAno: autoresPayload.length === 0,
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const isCategoryLoading = categories.length === 0 && initial === null;
   const isAutoresLoading = autores.length === 0 && initial === null;
 
-  const isDisabled = isCategoryLoading || isAutoresLoading;
+  const isDisabled = isCategoryLoading || isAutoresLoading || isSaving;
 
   return (
     <>
       <h3>{initial ? "Editar Documento" : "Registrar Documento"}</h3>
 
       <div className="form-grid">
-        {/* INPUT: Código */}
         <input
           placeholder="Código"
           value={form.MatBibCod}
           onChange={(e) => setForm({ ...form, MatBibCod: e.target.value })}
+          disabled={isDisabled}
         />
-        {/* INPUT: Título */}
         <input
           placeholder="Título"
           value={form.MatBibTit}
           onChange={(e) => setForm({ ...form, MatBibTit: e.target.value })}
+          disabled={isDisabled}
         />
-        
-        {/* SELECT: Categoría */}
-        <select
-            className="input"
-            value={form.CatId}
-            onChange={(e) => setForm({ ...form, CatId: Number(e.target.value) })}
-            disabled={isCategoryLoading}
-        >
-            {isCategoryLoading && <option>Cargando categorías...</option>}
-            {categories.map(cat => (
-                <option key={cat.CatId} value={cat.CatId}>
-                    {cat.CatNom}
-                </option>
-            ))}
-        </select>
 
-        {/* SELECT MÚLTIPLE: Autores */}
         <select
-            className="input"
-            multiple={true}
-            value={form.selectedAutoresIds.map(String)} 
-            onChange={handleAutoresChange}
-            disabled={isAutoresLoading}
-            style={{ minHeight: '100px' }}
+          className="input"
+          value={form.CatId}
+          onChange={(e) => setForm({ ...form, CatId: Number(e.target.value) })}
+          disabled={isCategoryLoading || isSaving}
         >
-            {isAutoresLoading && <option disabled>Cargando autores...</option>}
-            {autores.map(aut => (
-                <option key={aut.AutId} value={aut.AutId}>
-                    {`${aut.AutNom} ${aut.AutApe} (${aut.AutDoc})`}
-                </option>
-            ))}
+          {isCategoryLoading && <option value={0}>Cargando categorías...</option>}
+          {categories.map(cat => (
+            <option key={cat.CatId} value={cat.CatId}>
+              {cat.CatNom}
+            </option>
+          ))}
         </select>
+        <div></div>
 
+        <div style={{ gridColumn: 'span 2' }}>
+          <AutorSelector
+            allAutores={autores}
+            selectedIds={form.selectedAutoresIds}
+            onChange={handleAutorIdsChange}
+          />
+        </div>
       </div>
 
       <div className="modal-actions">
         <button className="btn" onClick={submit} disabled={isDisabled}>
-          Guardar
+          {isSaving ? "Guardando..." : "Guardar"}
         </button>
-        <button className="btn secondary" onClick={onCancel}>
+        <button className="btn secondary" onClick={onCancel} disabled={isSaving}>
           Cancelar
         </button>
       </div>
@@ -232,50 +328,117 @@ function DocumentoForm({
 export default function Documentos() {
   const setTitle = useOutletContext<((title: string) => void) | undefined>();
   const { authFetch } = useAuth();
-  
-  // Cargar datos relacionados
-  const { categories } = useCategories(authFetch);
-  const { autores } = useAutores(authFetch);
+
+  const { categories, loading: loadingCategories } = useCategories(authFetch);
+  const { autores, loading: loadingAutores } = useAutores(authFetch);
 
   useEffect(() => {
     setTitle?.("Documentos");
   }, [setTitle]);
 
   /* ===== ESTADO Y FILTROS ===== */
-  
   const [items, setItems] = useState<MaterialBibliografico[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [view, setView] = useState<View>("activos");
   const [modal, setModal] = useState<ModalState>(null);
   const [selected, setSelected] = useState<MaterialBibliografico | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
-  /* ===== LOAD DATA ===== */
   
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [errorModal, setErrorModal] = useState<string | null>(null);
+
+
+  /* ===== MANEJO DE ERRORES DEL BACKEND (Lógica robusta) ===== */
+  const handleBackendError = async (res: Response) => {
+    if (!res.ok) {
+      let errorMessage = `Error ${res.status}: Operación fallida.`;
+      let textBody = '';
+
+      try {
+        const resClone = res.clone();
+        textBody = await resClone.text();
+        const errorData = JSON.parse(textBody);
+
+        let rawMessage = null;
+
+        // 1. Obtener el mensaje del campo 'message' principal o anidado
+        if (errorData && errorData.message) {
+            rawMessage = errorData.message;
+        } else if (errorData.error && errorData.error.message) {
+             rawMessage = errorData.error.message;
+        }
+        
+        // 2. Personalizar o traducir el mensaje si es un Array de errores de validación
+        if (Array.isArray(rawMessage)) {
+            // Función de traducción/personalización para Documentos
+            const translateValidationMessage = (msg: string) => {
+                const messages: { [key: string]: string } = {
+                    'MatBibCod should not be empty': 'El Código del Documento no puede estar vacío.',
+                    'MatBibTit should not be empty': 'El Título del Documento no puede estar vacío.',
+                    'CatId must be a number': 'Debe seleccionar una Categoría válida.',
+                };
+
+                for (const pattern in messages) {
+                    if (msg.includes(pattern)) {
+                        return messages[pattern];
+                    }
+                }
+                return msg;
+            };
+
+            // Formatear el mensaje traducido, uniéndolos con un separador claro
+            errorMessage = rawMessage.map(translateValidationMessage).join(" | ");
+
+        } else if (rawMessage) {
+            // 3. Si es un string simple
+            errorMessage = rawMessage;
+        } else {
+            // 4. Mensaje de respaldo
+            errorMessage = `Error ${res.status}: ${errorData.error || errorData.statusCode || 'Respuesta desconocida'}.`;
+        }
+
+      } catch (e) {
+          // 5. Si falla al parsear el JSON
+          if (textBody) {
+             errorMessage = `Error ${res.status}: ${textBody}`;
+          } else {
+             errorMessage = `Error ${res.status}: Error de conexión o servidor.`;
+          }
+      }
+      
+      setErrorModal(errorMessage);
+      // Lanzamos un error para que el catch de la operación lo capture y detenga el flujo
+      throw new Error(errorMessage); 
+    }
+  };
+
+  const closeErrorModal = () => {
+    setErrorModal(null);
+  }
+  
+  /* ===== LOAD DATA ===== */
   const load = async () => {
     setLoading(true);
-    setError(null);
+    setLoadError(null);
     try {
       const url =
         view === "activos"
           ? "/api/material-bibliografico"
           : "/api/material-bibliografico/desactivados";
       const res = await authFetch(url);
-      const data = (await res.json().catch(() => null)) as unknown;
-
+      
       if (!res.ok) {
-        setError(errorMessage(data, "No se pudo cargar documentos"));
-        setItems([]);
-        return;
+        throw new Error(`Error al cargar documentos (${res.status})`);
       }
 
-      setItems((data as MaterialBibliografico[]) || []);
-    } catch {
-      setError("No se pudo conectar para cargar documentos");
+      const data = (await res.json()) as MaterialBibliografico[];
+      setItems(data || []);
+    } catch(e) {
+      console.error("No se pudo conectar para cargar documentos", e);
       setItems([]);
+      setLoadError("No se pudieron cargar los documentos.");
     } finally {
       setLoading(false);
     }
@@ -283,13 +446,14 @@ export default function Documentos() {
 
   useEffect(() => {
     void load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
   useEffect(() => {
     setPage(1);
   }, [search, pageSize]);
 
+  /* ===== FILTRADO Y PAGINACIÓN ===== */
   const filteredItems = useMemo(() => {
     return items.filter(
       (m) =>
@@ -310,7 +474,7 @@ export default function Documentos() {
     return filteredItems.slice(start, start + pageSize);
   }, [filteredItems, page, pageSize]);
 
-  /* ===== CRUD ACTIONS ===== */
+  /* ===== CRUD ACTIONS (Usando handleBackendError) ===== */
 
   const save = async (payload: any) => {
     const isEdit = modal === "edit" && selected;
@@ -326,76 +490,79 @@ export default function Documentos() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(
-          errorMessage(data, `Error al ${isEdit ? "actualizar" : "crear"} documento`)
-        );
-      }
+      await handleBackendError(res); // Si hay error, lanza la excepción y muestra el modal.
 
       setModal(null);
       setSelected(null);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error desconocido al guardar");
+      // El error ya fue manejado y mostrado en el modal.
+      console.error("Error en SAVE:", e);
     }
   };
 
   const deactivate = async () => {
     if (!selected) return;
     try {
-      await authFetch(`/api/material-bibliografico/${selected.MatBibId}`, {
+      const res = await authFetch(`/api/material-bibliografico/${selected.MatBibId}`, {
         method: "DELETE",
       });
+      
+      await handleBackendError(res);
+
       setModal(null);
       setSelected(null);
       await load();
     } catch (e) {
-      setError("Error al desactivar el documento");
+      console.error("Error en DEACTIVATE:", e);
     }
   };
 
   const reactivate = async () => {
     if (!selected) return;
     try {
-      await authFetch(
+      const res = await authFetch(
         `/api/material-bibliografico/reactivar/${selected.MatBibId}`,
         {
           method: "PATCH",
         }
       );
+
+      await handleBackendError(res);
+
       setModal(null);
       setSelected(null);
       await load();
     } catch (e) {
-      setError("Error al reactivar el documento");
+      console.error("Error en REACTIVATE:", e);
     }
   };
 
   const recalculateFormat = async () => {
     if (!selected) return;
     try {
-      await authFetch(
+      const res = await authFetch(
         `/api/material-bibliografico/recalcular-formato/${selected.MatBibId}`,
         {
           method: "PATCH",
         }
       );
+
+      await handleBackendError(res);
+
       setModal(null);
       setSelected(null);
       await load();
     } catch (e) {
-      setError("Error al recalcular el formato del documento");
+      console.error("Error en RECALCULATE:", e);
     }
   };
 
-  /* ===== UI ===== */
+  /* ===== UI DE TABLA ===== */
   return (
     <>
-      {error && <div className="error">{error}</div>}
+      {loadError && <div className="error">{loadError}</div>}
       
-      {/* ===== FILTROS Y BOTONES ===== */}
-
       <div className="filters-card">
         <h3 className="card-title">Filtros</h3>
         <input
@@ -413,19 +580,17 @@ export default function Documentos() {
           <option value="activos">Activos</option>
           <option value="desactivados">Desactivados</option>
         </select>
-        <button 
+        <button
           className="btn-new"
           onClick={() => {
             setSelected(null);
             setModal("new");
           }}
-          disabled={loading || categories.length === 0 || autores.length === 0}
+          disabled={loading || loadingCategories || loadingAutores}
         >
           ➕ Nuevo
         </button>
       </div>
-
-      {/* ===== TABLA ===== */}
 
       <div className="table-card">
         <h3 className="card-title">Listado de Documentos</h3>
@@ -446,10 +611,10 @@ export default function Documentos() {
           <table>
             <thead>
               <tr>
-                <th>ID</th>
+                <th>#</th>
                 <th>Código</th>
                 <th>Título</th>
-                <th>Categoría</th> 
+                <th>Categoría</th>
                 <th>Formato</th>
                 <th>Físicos</th>
                 <th>Virtual</th>
@@ -459,7 +624,9 @@ export default function Documentos() {
               </tr>
             </thead>
             <tbody>
-              {paginatedItems.map((m) => {
+              {paginatedItems.map((m, index) => {
+                const itemIndex = (page - 1) * pageSize + index + 1;
+
                 const autoresList = (m.autoresMaterial || []).map(
                   (x) => `${x.autor.AutNom} ${x.autor.AutApe}`
                 );
@@ -477,7 +644,7 @@ export default function Documentos() {
 
                 return (
                   <tr key={m.MatBibId}>
-                    <td>{m.MatBibId}</td>
+                    <td>{itemIndex}</td>
                     <td>{m.MatBibCod}</td>
                     <td>{m.MatBibTit}</td>
                     <td>{categoryName}</td>
@@ -520,8 +687,6 @@ export default function Documentos() {
         </div>
       </div>
 
-      {/* ===== PAGINACIÓN ===== */}
-
       <div className="pagination">
         <button
           className="btn-secondary"
@@ -541,8 +706,8 @@ export default function Documentos() {
           Siguiente ➡
         </button>
       </div>
-
-      {/* ===== MODALES ===== */}
+      
+      {/* ===== MODALES DE OPERACIÓN ===== */}
       {modal && (
         <div className="modal-backdrop">
           <div className="modal">
@@ -563,58 +728,80 @@ export default function Documentos() {
                 initial={modal === "edit" ? selected : null}
                 onSave={save}
                 onCancel={() => setModal(null)}
-                categories={categories} 
-                autores={autores} 
+                categories={categories}
+                autores={autores}
               />
             )}
-
-            {/* Delete, Reactivate, Recalculate Modals */}
-            {modal === "delete" && (
-                <>
+            
+            {/* Delete Modal */}
+            {modal === "delete" && selected && (
+              <>
                 <h3>¿Desactivar documento?</h3>
                 <p>
-                    **Documento:** {selected?.MatBibTit} ({selected?.MatBibCod})
+                  **Documento:** {selected.MatBibTit} ({selected.MatBibCod})
                 </p>
-                <button className="btn danger" onClick={deactivate}>
+                <div className="modal-actions">
+                  <button className="btn danger" onClick={deactivate}>
                     Desactivar
-                </button>
-                <button className="btn secondary" onClick={() => setModal(null)}>
+                  </button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>
                     Cancelar
-                </button>
-                </>
+                  </button>
+                </div>
+              </>
             )}
-            {modal === "reactivate" && (
-                <>
+            
+            {/* Reactivate Modal */}
+            {modal === "reactivate" && selected && (
+              <>
                 <h3>¿Reactivar documento?</h3>
                 <p>
-                    **Documento:** {selected?.MatBibTit} ({selected?.MatBibCod})
+                  **Documento:** {selected.MatBibTit} ({selected.MatBibCod}) volverá a estar activo.
                 </p>
-                <button className="btn" onClick={reactivate}>
+                <div className="modal-actions">
+                  <button className="btn" onClick={reactivate}>
                     Reactivar
-                </button>
-                <button className="btn secondary" onClick={() => setModal(null)}>
+                  </button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>
                     Cancelar
-                </button>
-                </>
+                  </button>
+                </div>
+              </>
             )}
-            {modal === "recalculate" && (
-                <>
+            
+            {/* Recalculate Modal */}
+            {modal === "recalculate" && selected && (
+              <>
                 <h3>¿Recalcular formato?</h3>
                 <p>
-                    Esto actualizará el campo `MatBibFor` basado en la existencia
-                    de copias físicas y recursos virtuales.
+                  Esto actualizará el campo `MatBibFor` basado en la existencia
+                  de copias físicas y recursos virtuales.
                 </p>
                 <p>
-                    **Documento:** {selected?.MatBibTit} ({selected?.MatBibCod})
+                  **Documento:** {selected.MatBibTit} ({selected.MatBibCod})
                 </p>
-                <button className="btn" onClick={recalculateFormat}>
+                <div className="modal-actions">
+                  <button className="btn" onClick={recalculateFormat}>
                     Recalcular
-                </button>
-                <button className="btn secondary" onClick={() => setModal(null)}>
+                  </button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>
                     Cancelar
-                </button>
-                </>
+                  </button>
+                </div>
+              </>
             )}
+          </div>
+        </div>
+      )}
+      
+      {/* ===== MODAL DE ERROR (Muestra solo el mensaje descriptivo) ===== */}
+      {errorModal && (
+        <div className="modal-backdrop">
+          <div className="modal error-modal">
+            <h3 className="error-title">❌ Error en la Operación</h3>
+            {/* Mensaje detallado y parseado del backend */}
+            <p>{errorModal}</p>
+            <button className="btn" onClick={closeErrorModal}>Aceptar</button>
           </div>
         </div>
       )}
