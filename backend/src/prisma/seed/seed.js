@@ -4,7 +4,9 @@ const bcrypt = require('bcrypt');
 const prisma = new PrismaClient();
 
 async function main() {
-  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@admin.com';
+  const adminEmail = String(process.env.SEED_ADMIN_EMAIL || 'admin@admin.com')
+    .trim()
+    .toLowerCase();
   const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'admin123';
   const forceReset =
     (process.env.SEED_FORCE_RESET_ADMIN_PASSWORD || '').toLowerCase() === 'true';
@@ -12,7 +14,7 @@ async function main() {
   // DEBUG (no imprimir password real en logs)
   console.log('[seed] adminEmail:', adminEmail);
   console.log('[seed] forceReset:', forceReset);
-  console.log('[seed] adminPassword (masked):', '*'.repeat(String(adminPassword).length));
+  console.log('[seed] adminPassword (masked):', '*'.repeat(adminPassword.length));
 
   const admin = await prisma.tB_USUARIO.findUnique({
     where: { UsuEma: adminEmail },
