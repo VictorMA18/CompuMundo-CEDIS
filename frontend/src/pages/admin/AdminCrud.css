@@ -317,3 +317,32 @@ tbody tr:hover {
     "Liberation Mono", "Courier New", monospace;
 }
 
+/* Ejemplo de estilos para el campo de contraseña con botón */
+.password-container {
+    position: relative;
+    display: flex; /* Para que el input ocupe el espacio */
+    align-items: center;
+}
+
+.password-container input {
+    /* Asegura que el input ocupe casi todo el ancho */
+    flex-grow: 1; 
+    padding-right: 40px; /* Deja espacio para el botón */
+}
+
+.toggle-password-btn {
+    position: absolute;
+    right: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 0;
+    margin: 0;
+    line-height: 1; /* Para centrar mejor el ícono */
+}
+
+.toggle-password-btn:hover {
+    opacity: 0.8;
+}
+
