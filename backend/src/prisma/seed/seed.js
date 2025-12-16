@@ -6,13 +6,21 @@ const prisma = new PrismaClient();
 async function main() {
   const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@admin.com';
   const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'admin123';
+  const forceReset =
+    (process.env.SEED_FORCE_RESET_ADMIN_PASSWORD || '').toLowerCase() === 'true';
+
+  // DEBUG (no imprimir password real en logs)
+  console.log('[seed] adminEmail:', adminEmail);
+  console.log('[seed] forceReset:', forceReset);
+  console.log('[seed] adminPassword (masked):', '*'.repeat(String(adminPassword).length));
 
   const admin = await prisma.tB_USUARIO.findUnique({
     where: { UsuEma: adminEmail },
   });
 
+  const hashed = await bcrypt.hash(adminPassword, 10);
+
   if (!admin) {
-    const hashed = await bcrypt.hash(adminPassword, 10);
     await prisma.tB_USUARIO.create({
       data: {
         UsuNom: 'Administrador',
@@ -25,6 +33,20 @@ async function main() {
     console.log('Usuario administrador creado');
   } else {
     console.log('El usuario administrador ya existe');
+
+    if (forceReset) {
+      await prisma.tB_USUARIO.update({
+        where: { UsuEma: adminEmail },
+        data: {
+          UsuCon: hashed,
+          UsuAct: true,
+          UsuTip: 'administrador',
+        },
+      });
+      console.log(
+        'Admin actualizado (password/act/tipo) por SEED_FORCE_RESET_ADMIN_PASSWORD=true',
+      );
+    }
   }
 
   const categorias = [
