@@ -1,98 +1,152 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# ⚙️ Backend – CompuMundo CEDIS
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST del sistema **CompuMundo CEDIS**, encargada de la lógica de negocio, seguridad, persistencia de datos y generación de reportes del Centro de Documentación.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Desarrollado con **NestJS** siguiendo buenas prácticas de arquitectura y separación de responsabilidades.
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🧩 Descripción
 
-## Project setup
+El backend expone una API REST segura que permite gestionar usuarios, lectores, préstamos, material bibliográfico (físico y virtual), autores, categorías y reportes, aplicando reglas de negocio estrictas definidas para el CEDIS.
 
-```bash
-$ npm install
-```
+La API está documentada automáticamente mediante **Swagger (OpenAPI)**.
 
-## Compile and run the project
+---
 
-```bash
-# development
-$ npm run start
+## 🏗️ Arquitectura
 
-# watch mode
-$ npm run start:dev
+El backend sigue el patrón: 
 
-# production mode
-$ npm run start:prod
-```
+**Controlador – Servicio – Repositorio**
 
-## Run tests
+* **Controller**: Manejo de peticiones HTTP y validación de DTOs
+* **Service**: Lógica de negocio y reglas del sistema
+* **Repository**: Acceso a datos mediante Prisma ORM
 
-```bash
-# unit tests
-$ npm run test
+Además, se implementan:
+* Pipes globales de validación
+* Interceptores
+* Filtros de excepciones
+* Guards de autenticación y autorización
 
-# e2e tests
-$ npm run test:e2e
+---
 
-# test coverage
-$ npm run test:cov
-```
+## 🧱 Módulos del Sistema
 
-## Deployment
+El backend está organizado en los siguientes módulos:
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+* **AuthModule**: Autenticación JWT y control de accesos
+* **UsuariosModule**: Gestión de usuarios del sistema
+* **LectoresModule**: Gestión de lectores (estudiantes, docentes, administrativos)
+* **CategoriasModule**: Clasificación del material bibliográfico
+* **AutorModule**: Gestión de autores
+* **AutorMaterialModule**: Relación autor–material
+* **MaterialBibliograficoModule**: Gestión general del material
+* **MaterialFisicoModule**: Gestión de ejemplares físicos
+* **MaterialVirtualModule**: Gestión de material digital
+* **PrestamosModule**: Gestión de préstamos y devoluciones
+* **ReportesModule**: Generación de reportes en PDF y Excel
+* **PrismaModule**: Acceso centralizado a la base de datos
+* **CommonModule**: Utilidades compartidas (filtros, interceptores)
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+---
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+## 🗄️ Modelo de Datos
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+La persistencia se realiza sobre **PostgreSQL** usando **Prisma ORM**. 
 
-## Resources
+### Entidades principales
+* Usuarios (`TB_USUARIO`)
+* Lectores (`TB_LECTOR`)
+* Categorías (`TB_CATEGORIA`)
+* Material Bibliográfico (`TB_MATERIAL_BIBLIOGRAFICO`)
+* Material Físico (`TB_MATERIAL_FISICO`)
+* Material Virtual (`TB_MATERIAL_VIRTUAL`)
+* Autores (`TB_AUTOR`)
+* Préstamos (`TB_PRESTAMO`)
+* Detalle de Préstamos (`TB_PRESTAMO_DETALLE`)
 
-Check out a few resources that may come in handy when working with NestJS:
+### Tipos y Enumeraciones
+* `TipoPrestamo`: `FISICO | VIRTUAL`
+* `FormatoMaterial`: `FISICO | VIRTUAL | MIXTO | NINGUNO`
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Se aplican:
+* Relaciones 1:N y N:M
+* Restricciones únicas
+* Eliminación lógica (Soft Delete)
+* Auditoría con fechas de creación y actualización
 
-## Support
+---
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## 🔐 Seguridad
 
-## Stay in touch
+* Autenticación basada en **JWT**
+* Encriptación de contraseñas con **bcrypt**
+* Protección de rutas mediante **Guards**
+* Control de accesos por roles (**RBAC**)
+* Validación global de datos con `ValidationPipe`
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+---
 
-## License
+## 📑 Documentación API (Swagger)
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+La API está documentada automáticamente.
+
+📍 **Swagger UI:**
+
+`http://localhost:3000/api/docs`
+
+Incluye:
+* Endpoints
+* DTOs
+* Autenticación Bearer Token
+* Ejemplos de request/response
+
+---
+
+## 📌 Reglas de Negocio Implementadas
+
+* Préstamos con duración máxima de 3 días hábiles
+* Bloqueo de préstamos por morosidad activa
+* Validación estricta de stock físico
+* Control de préstamos físicos y virtuales
+* Eliminación lógica para mantener historial
+* Validación de DNI (8 dígitos) y correos únicos
+
+---
+
+## 🚀 Despliegue
+
+El sistema se encuentra desplegado en la nube utilizando servicios modernos de hosting:
+
+* **Backend**: Railway
+* **Base de datos**: PostgreSQL (Railway)
+* **Contenedores**: Nixpacks
+* **Variables**: Gestionadas en entorno seguro
+
+---
+
+## 🎓 Contexto Académico
+
+Este proyecto fue desarrollado con fines académicos como parte del curso:
+
+* **Universidad**: Universidad Nacional de San Agustín (UNSA)
+* **Carrera**: Ingeniería de Sistemas
+* **Curso**: Construcción de Software
+* **Periodo**: 2025
+
+---
+
+## ✍️ Autores
+
+* Choquehuanca Zapana, Hernan Andy
+* Maldonado Vilca, Victor Gonzalo
+* Mamani Anahua, Victor Narciso
+* Quispe Marca, Edysson Darwin
+
+---
+
+## 📌 Estado
+
+✅ **Backend funcional, seguro y escalable**
