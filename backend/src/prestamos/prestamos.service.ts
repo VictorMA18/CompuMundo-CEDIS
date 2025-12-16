@@ -100,8 +100,12 @@ export class PrestamosService {
         usuario: true,
         detalles: {
           include: {
-            materialBibliografico: true, // <-- Trae el título
-            materialFisico: true         // <-- Trae el código del ejemplar
+            materialFisico: true,
+            materialBibliografico: {
+              include: {
+                categoria: true 
+              }
+            }
           }
         }
       },
