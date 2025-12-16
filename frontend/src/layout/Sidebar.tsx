@@ -13,7 +13,8 @@ export default function Sidebar() {
   };
 
   const menu = [
-    { label: 'Dashboard', path: '/app', icon: '🏠' },
+    { label: 'Home', path: '/app', icon: '🏠' },
+    { label: 'Dashboard', path: '/app/dashboard', icon: '📊' },
     { label: 'Préstamos', path: '/app/prestamos', icon: '📚' },
     { label: 'Lectores', path: '/app/lectores', icon: '👥' },
     { label: 'Documentos', path: '/app/documentos', icon: '📑' },
