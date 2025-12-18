@@ -5,7 +5,7 @@ import type { UsuTip } from "../../types/auth";
 import type { Usuario } from "../../types/usuario";
 import "./AdminCrud.css"; // Asegúrate de que este archivo CSS existe
 
-/* ================= FORMULARIO ================= */
+/* ================= FORMULARIO (ACTUALIZADO CON VALIDACIÓN FRONTEND) ================= */
 function UsuarioForm({
   initial,
   onSave,
@@ -22,12 +22,15 @@ function UsuarioForm({
     UsuCon: "",
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); 
+  const [showPassword, setShowPassword] = useState(false);
+  // Estado para mostrar errores de validación del frontend
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initial) {
-        setForm({ UsuNom: "", UsuEma: "", UsuTip: "consultor", UsuCon: "" });
-        return;
+      setForm({ UsuNom: "", UsuEma: "", UsuTip: "consultor", UsuCon: "" });
+      setValidationError(null);
+      return;
     }
     setForm({
       UsuNom: initial.UsuNom,
@@ -35,11 +38,43 @@ function UsuarioForm({
       UsuTip: initial.UsuTip,
       UsuCon: "",
     });
+    setValidationError(null);
   }, [initial]);
 
+  // Manejador genérico que limpia el error al escribir y maneja inputs/selects
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value as any });
+    if (validationError) {
+      setValidationError(null);
+    }
+  };
+
+  // Función de validación de campos obligatorios
+  const validate = () => {
+    if (!form.UsuNom.trim()) {
+      setValidationError("El nombre del usuario es obligatorio.");
+      return false;
+    }
+    if (!form.UsuEma.trim()) {
+      setValidationError("El correo electrónico es obligatorio.");
+      return false;
+    }
+    // La contraseña es obligatoria solo en el modo "new"
+    if (!initial && !form.UsuCon.trim()) {
+      setValidationError("La contraseña es obligatoria para nuevos usuarios.");
+      return false;
+    }
+    setValidationError(null);
+    return true;
+  }
+
   const submit = async () => {
-    // Validaciones básicas de campos requeridos
-    if (isSaving || !form.UsuNom.trim() || !form.UsuEma.trim() || (!initial && !form.UsuCon.trim())) return;
+    // 1. Validar en el frontend
+    if (!validate()) {
+      return;
+    }
+
+    if (isSaving) return;
 
     setIsSaving(true);
     const payload: any = {
@@ -56,7 +91,7 @@ function UsuarioForm({
     try {
         await onSave(payload);
     } finally {
-        setIsSaving(false); 
+      setIsSaving(false);
     }
   };
 
@@ -65,21 +100,27 @@ function UsuarioForm({
       <h3>{initial ? "Editar usuario" : "Registrar usuario"}</h3>
 
       <div className="form-grid">
+        {/* Campo de Nombre */}
         <input
-          placeholder="Nombre"
+          placeholder="Nombre (obligatorio)"
+          name="UsuNom" 
           value={form.UsuNom}
-          onChange={(e) => setForm({ ...form, UsuNom: e.target.value })}
+          onChange={handleChange}
           disabled={isSaving}
         />
+        {/* Campo de Correo */}
         <input
-          placeholder="Correo"
+          placeholder="Correo (obligatorio)"
+          name="UsuEma" 
           value={form.UsuEma}
-          onChange={(e) => setForm({ ...form, UsuEma: e.target.value })}
+          onChange={handleChange}
           disabled={isSaving}
         />
+        {/* Campo de Rol */}
         <select
+          name="UsuTip" 
           value={form.UsuTip}
-          onChange={(e) => setForm({ ...form, UsuTip: e.target.value as UsuTip })}
+          onChange={handleChange}
           disabled={isSaving}
         >
           <option value="administrador">Administrador</option>
@@ -91,9 +132,10 @@ function UsuarioForm({
         <div className="password-container"> 
           <input
             type={showPassword ? "text" : "password"}
-            placeholder={initial ? "Nueva contraseña (opcional)" : "Contraseña"}
+            placeholder={initial ? "Nueva contraseña (opcional)" : "Contraseña (obligatoria)"}
+            name="UsuCon" 
             value={form.UsuCon}
-            onChange={(e) => setForm({ ...form, UsuCon: e.target.value })}
+            onChange={handleChange}
             disabled={isSaving}
           />
           <button 
@@ -105,8 +147,24 @@ function UsuarioForm({
             {showPassword ? "👁️" : "🔒"} 
           </button>
         </div>
-
       </div>
+
+      {/* ERROR DE VALIDACIÓN DEL FRONTEND */}
+      {validationError && (
+        <p
+          style={{
+            color: "#dc3545", 
+            fontSize: "0.9em",
+            fontWeight: "bold",
+            textAlign: "center",
+            marginTop: "5px",
+            marginBottom: "5px",
+          }}
+        >
+          {validationError}
+        </p>
+      )}
+
 
       <div className="modal-actions">
         <button className="btn" onClick={submit} disabled={isSaving}>
@@ -134,7 +192,7 @@ export default function Usuarios() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorModal, setErrorModal] = useState<string | null>(null); 
-
+  const [successModal, setSuccessModal] = useState<string | null>(null);
   // filtros
   const [search, setSearch] = useState("");
   const [rol, setRol] = useState("");
@@ -179,7 +237,7 @@ export default function Usuarios() {
                     'UsuCon must be longer than or equal to 6 characters': 'La contraseña debe tener al menos 6 caracteres.',
                     'UsuNom should not be empty': 'El nombre del usuario no puede estar vacío.',
                     'UsuEma should not be empty': 'El correo del usuario no puede estar vacío.',
-                    // Agrega aquí más patrones de error de validación que encuentres
+                    'already exists': 'ya está registrado/a.', // Para mensajes como "El email ya está registrado"
                 };
 
                 // Busca por inclusión de substring
@@ -196,7 +254,7 @@ export default function Usuarios() {
             errorMessage = rawMessage.map(translateValidationMessage).join(" | ");
 
         } else if (rawMessage) {
-            // 3. Si es un string simple (errores lanzados manualmente en el backend, ej. "El email ya está registrado")
+            // 3. Si es un string simple (ej. "El email ya está registrado")
             errorMessage = rawMessage;
         } else {
             // 4. Mensaje de respaldo si el JSON es válido pero sin campos 'message' útiles
@@ -206,9 +264,9 @@ export default function Usuarios() {
       } catch (e) {
           // 5. Si falla al parsear el JSON (cuerpo vacío o no JSON)
           if (textBody) {
-               errorMessage = `Error ${res.status}: ${textBody}`;
+             errorMessage = `Error ${res.status}: ${textBody}`;
           } else {
-               errorMessage = `Error ${res.status}: Error de conexión o servidor.`;
+             errorMessage = `Error ${res.status}: Error de conexión o servidor.`;
           }
       }
       
@@ -291,7 +349,7 @@ export default function Usuarios() {
       });
 
       await handleBackendError(res);
-
+      setSuccessModal(isEdit ? "Usuario actualizado correctamente" : "Usuario registrado correctamente");
       setModal(null);
       setSelected(null);
       await load();
@@ -306,7 +364,7 @@ export default function Usuarios() {
       const res = await authFetch(`/api/usuarios/${selected.UsuId}`, { method: "DELETE" });
 
       await handleBackendError(res);
-
+      setSuccessModal("Usuario desactivado con éxito");
       setModal(null);
       setSelected(null);
       await load();
@@ -323,7 +381,7 @@ export default function Usuarios() {
       });
 
       await handleBackendError(res);
-
+      setSuccessModal("Usuario reactivado con éxito");
       setModal(null);
       setSelected(null);
       await load();
@@ -483,27 +541,40 @@ export default function Usuarios() {
               />
             )}
 
-            {modal === "delete" && (
+            {modal === "delete" && selected && (
               <>
                 <h3>¿Desactivar usuario?</h3>
                 <p>El usuario no podrá acceder al sistema</p>
-                <button className="btn danger" onClick={deactivate}>Desactivar</button>
-                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                <div className="modal-actions">
+                  <button className="btn danger" onClick={deactivate}>Desactivar</button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                </div>
               </>
             )}
 
-            {modal === "reactivate" && (
+            {modal === "reactivate" && selected && ( 
               <>
                 <h3>¿Reactivar usuario?</h3>
-                <button className="btn" onClick={reactivate}>Reactivar</button>
-                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                <p>El usuario podrá volver acceder al sistema</p>
+                <div className="modal-actions">
+                  <button className="btn" onClick={reactivate}>Reactivar</button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                </div>
               </>
             )}
+                      </div>
+        </div>
+      )}
+      {successModal && (
+        <div className="modal-backdrop">
+          <div className="modal success-modal">
+            <h3 className="success-title">✅ Operación Exitosa</h3>
+            <p>{successModal}</p>
+            <button className="btn" onClick={() => setSuccessModal(null)}>Aceptar</button>
           </div>
         </div>
       )}
-
-      {/* ===== MODAL DE ERROR ===== */}
+      {/* ===== MODAL DE ERROR (Backend) ===== */}
       {errorModal && (
         <div className="modal-backdrop">
           <div className="modal error-modal">

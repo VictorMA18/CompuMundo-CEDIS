@@ -15,7 +15,7 @@ interface Lector {
   LecAct: boolean;
 }
 
-/* ================= FORMULARIO ================= */
+/* ================= FORMULARIO (ACTUALIZADO CON VALIDACIÓN FRONTEND) ================= */
 function LectorForm({
   initial,
   onSave,
@@ -30,14 +30,17 @@ function LectorForm({
     LecApe: "",
     LecDni: "",
     LecEma: "",
-    LecTip: "estudiante",
+    LecTip: "estudiante" as Lector['LecTip'], // Aseguramos el tipo
   });
   const [isSaving, setIsSaving] = useState(false);
+  // Estado para mostrar errores de validación del frontend
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initial) {
-        setForm({ LecNom: "", LecApe: "", LecDni: "", LecEma: "", LecTip: "estudiante" });
-        return;
+      setForm({ LecNom: "", LecApe: "", LecDni: "", LecEma: "", LecTip: "estudiante" });
+      setValidationError(null);
+      return;
     }
     setForm({
       LecNom: initial.LecNom ?? "",
@@ -46,10 +49,42 @@ function LectorForm({
       LecEma: initial.LecEma ?? "",
       LecTip: initial.LecTip ?? "estudiante",
     });
+    setValidationError(null);
   }, [initial]);
 
+  // Manejador genérico que limpia el error al escribir y maneja inputs/selects
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value as any });
+    if (validationError) {
+      setValidationError(null);
+    }
+  };
+
+  // Función de validación de campos obligatorios
+  const validate = () => {
+    if (!form.LecNom.trim()) {
+      setValidationError("El nombre del lector es obligatorio.");
+      return false;
+    }
+    if (!form.LecApe.trim()) {
+      setValidationError("El apellido del lector es obligatorio.");
+      return false;
+    }
+    if (!form.LecDni.trim()) {
+      setValidationError("El DNI es obligatorio.");
+      return false;
+    }
+    setValidationError(null);
+    return true;
+  }
+
   const submit = async () => {
-    if (isSaving || !form.LecNom.trim() || !form.LecApe.trim() || !form.LecDni.trim()) return;
+    // 1. Validar en el frontend
+    if (!validate()) { 
+      return;
+    }
+
+    if (isSaving) return;
 
     setIsSaving(true);
     try {
@@ -72,32 +107,37 @@ function LectorForm({
 
       <div className="form-grid">
         <input
-          placeholder="Nombres"
+          placeholder="Nombres (obligatorio)"
+          name="LecNom" // Añadido name
           value={form.LecNom}
-          onChange={(e) => setForm({ ...form, LecNom: e.target.value })}
+          onChange={handleChange} // Usando handleChange genérico
           disabled={isSaving}
         />
         <input
-          placeholder="Apellidos"
+          placeholder="Apellidos (obligatorio)"
+          name="LecApe" // Añadido name
           value={form.LecApe}
-          onChange={(e) => setForm({ ...form, LecApe: e.target.value })}
+          onChange={handleChange} // Usando handleChange genérico
           disabled={isSaving}
         />
         <input
-          placeholder="DNI"
+          placeholder="DNI (obligatorio)"
+          name="LecDni" // Añadido name
           value={form.LecDni}
-          onChange={(e) => setForm({ ...form, LecDni: e.target.value })}
+          onChange={handleChange} // Usando handleChange genérico
           disabled={isSaving}
         />
         <input
           placeholder="Correo (opcional)"
+          name="LecEma" // Añadido name
           value={form.LecEma}
-          onChange={(e) => setForm({ ...form, LecEma: e.target.value })}
+          onChange={handleChange} // Usando handleChange genérico
           disabled={isSaving}
         />
         <select
+          name="LecTip" // Añadido name
           value={form.LecTip}
-          onChange={(e) => setForm({ ...form, LecTip: e.target.value as any })}
+          onChange={handleChange} // Usando handleChange genérico
           disabled={isSaving}
         >
           <option value="estudiante">Estudiante</option>
@@ -105,6 +145,22 @@ function LectorForm({
           <option value="administrativo">Administrativo</option>
         </select>
       </div>
+      
+      {/* ERROR DE VALIDACIÓN DEL FRONTEND */}
+      {validationError && (
+        <p
+          style={{
+            color: "#dc3545", // Rojo (Danger)
+            fontSize: "0.9em",
+            fontWeight: "bold",
+            textAlign: "center",
+            marginTop: "5px",
+            marginBottom: "5px",
+          }}
+        >
+          {validationError}
+        </p>
+      )}
 
       <div className="modal-actions">
         <button className="btn" onClick={submit} disabled={isSaving}>
@@ -132,6 +188,7 @@ export default function Lectores() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorModal, setErrorModal] = useState<string | null>(null); 
+  const [successModal, setSuccessModal] = useState<string | null>(null);
 
   // filtros
   const [search, setSearch] = useState("");
@@ -177,6 +234,7 @@ export default function Lectores() {
                     'LecNom should not be empty': 'El nombre no puede estar vacío.',
                     'LecApe should not be empty': 'El apellido no puede estar vacío.',
                     'LecEma must be an email': 'El correo electrónico no tiene un formato válido.',
+                    'already exists': 'ya está registrado/a.',
                 };
 
                 for (const pattern in messages) {
@@ -197,9 +255,9 @@ export default function Lectores() {
 
       } catch (e) {
           if (textBody) {
-               errorMessage = `Error ${res.status}: ${textBody}`;
+             errorMessage = `Error ${res.status}: ${textBody}`;
           } else {
-               errorMessage = `Error ${res.status}: Error de conexión o servidor.`;
+             errorMessage = `Error ${res.status}: Error de conexión o servidor.`;
           }
       }
       
@@ -287,7 +345,7 @@ export default function Lectores() {
       });
 
       await handleBackendError(res);
-
+      setSuccessModal(isEdit ? "Lector actualizado correctamente" : "Lector registrado correctamente");
       setModal(null);
       setSelected(null);
       await load();
@@ -303,7 +361,7 @@ export default function Lectores() {
       const res = await authFetch(`/api/lectores/${selected.LecId}`, { method: "DELETE" });
 
       await handleBackendError(res);
-
+      setSuccessModal("Lector desactivado con éxito");
       setModal(null);
       setSelected(null);
       await load();
@@ -320,7 +378,7 @@ export default function Lectores() {
       });
 
       await handleBackendError(res);
-
+      setSuccessModal("Lector reactivado con éxito");
       setModal(null);
       setSelected(null);
       await load();
@@ -493,24 +551,36 @@ export default function Lectores() {
             {modal === "delete" && selected && (
               <>
                 <h3>¿Desactivar lector?</h3>
-                <p>El lector **{selected.LecNom} {selected.LecApe}** será marcado como inactivo.</p>
-                <button className="btn danger" onClick={remove}>Desactivar</button>
-                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                <p>El lector <b>{selected.LecNom} {selected.LecApe}</b> será marcado como inactivo.</p>
+                <div className="modal-actions">
+                  <button className="btn danger" onClick={remove}>Desactivar</button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                </div>
               </>
             )}
 
             {modal === "reactivate" && selected && (
               <>
                 <h3>¿Reactivar lector?</h3>
-                <p>El lector **{selected.LecNom} {selected.LecApe}** volverá a estar activo en el sistema.</p>
-                <button className="btn" onClick={reactivate}>Reactivar</button>
-                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                <p>El lector <b>{selected.LecNom} {selected.LecApe}</b> volverá a estar activo en el sistema.</p>
+                <div className="modal-actions">
+                  <button className="btn" onClick={reactivate}>Reactivar</button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                </div>
               </>
             )}
           </div>
         </div>
       )}
-      
+      {successModal && (
+        <div className="modal-backdrop">
+          <div className="modal success-modal">
+            <h3 className="success-title">✅ Operación Exitosa</h3>
+            <p>{successModal}</p>
+            <button className="btn" onClick={() => setSuccessModal(null)}>Aceptar</button>
+          </div>
+        </div>
+      )}    
       {/* ===== MODAL DE ERROR (Muestra solo el mensaje descriptivo) ===== */}
       {errorModal && (
         <div className="modal-backdrop">

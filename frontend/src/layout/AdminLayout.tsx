@@ -11,7 +11,7 @@ export default function AdminLayout() {
     <div className="admin-root">
       <header className="top-header">
         <img src={logo} alt="Logo" className="top-logo" />
-        <div>
+        <div className="header-text">
           <h2>Centro de Documentación</h2>
           <p>Ingeniería de Sistemas</p>
         </div>
@@ -22,7 +22,7 @@ export default function AdminLayout() {
 
         <main className="content">
           {title && (
-            <div className="page-title">
+            <div className="page-title-bar">
               <h1>{title}</h1>
             </div>
           )}

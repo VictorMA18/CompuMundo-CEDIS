@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import type { Categoria } from "../../types/categoria";
-import "./AdminCrud.css"; // Asegúrate de que este archivo CSS existe
+import "./AdminCrud.css";
 
-/* ================= FORMULARIO ================= */
+/* ================= FORMULARIO (ACTUALIZADO CON ESTILO INLINE) ================= */
 function CategoriaForm({
   initial,
   onSave,
@@ -19,21 +19,46 @@ function CategoriaForm({
     CatDes: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  // Estado único para mostrar errores en la parte inferior del modal
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initial) {
       setForm({ CatNom: "", CatDes: "" });
+      setValidationError(null); // Limpiar error al cambiar a nuevo
       return;
     }
     setForm({
       CatNom: initial.CatNom ?? "",
       CatDes: initial.CatDes ?? "",
     });
+    setValidationError(null); // Limpiar error al cambiar a edición
   }, [initial]);
 
+  // Manejador genérico que limpia el error al escribir
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    if (validationError) {
+      setValidationError(null); // Limpiar el error cuando el usuario interactúa
+    }
+  };
+
+  const validate = () => {
+    if (!form.CatNom.trim()) {
+      setValidationError("El nombre de la categoría es obligatorio.");
+      return false;
+    }
+    setValidationError(null);
+    return true;
+  }
+
   const submit = async () => {
-    // Validar que el nombre no esté vacío
-    if (isSaving || !form.CatNom.trim()) return; 
+    // 1. Validar en el frontend
+    if (!validate()) {
+      return;
+    }
+
+    if (isSaving) return;
 
     setIsSaving(true);
     try {
@@ -42,8 +67,7 @@ function CategoriaForm({
         CatDes: form.CatDes.trim() || undefined,
       });
     } finally {
-      // Si onSave falla (y muestra el modal de error), isSaving se desactiva
-      setIsSaving(false); 
+      setIsSaving(false);
     }
   };
 
@@ -52,19 +76,39 @@ function CategoriaForm({
       <h3>{initial ? "Editar categoría" : "Registrar categoría"}</h3>
 
       <div className="form-grid">
+        {/* Campo de Nombre (obligatorio) */}
         <input
-          placeholder="Nombre de la categoría"
+          placeholder="Nombre de la categoría (Obligatorio)"
+          name="CatNom"
           value={form.CatNom}
-          onChange={(e) => setForm({ ...form, CatNom: e.target.value })}
+          onChange={handleChange}
           disabled={isSaving}
         />
+
+        {/* Campo de Descripción */}
         <input
           placeholder="Descripción (opcional)"
+          name="CatDes"
           value={form.CatDes}
-          onChange={(e) => setForm({ ...form, CatDes: e.target.value })}
+          onChange={handleChange}
           disabled={isSaving}
         />
       </div>
+      {validationError && (
+        <p
+          style={{
+            color: "#dc3545", 
+            fontSize: "0.9em",
+            fontWeight: "bold",
+            textAlign: "center", 
+            marginTop: "5px", 
+            marginBottom: "5px", 
+          }}
+        >
+          {validationError}
+        </p>
+      )}
+
 
       <div className="modal-actions">
         <button className="btn" onClick={submit} disabled={isSaving}>
@@ -91,6 +135,7 @@ export default function Categorias() {
   const [items, setItems] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successModal, setSuccessModal] = useState<string | null>(null);
 
   // filtros
   const [search, setSearch] = useState("");
@@ -100,7 +145,7 @@ export default function Categorias() {
   const [modal, setModal] =
     useState<null | "view" | "new" | "edit" | "delete" | "reactivate">(null);
   const [selected, setSelected] = useState<Categoria | null>(null);
-  const [errorModal, setErrorModal] = useState<string | null>(null); 
+  const [errorModal, setErrorModal] = useState<string | null>(null);
 
   // paginación
   const [page, setPage] = useState(1);
@@ -153,7 +198,7 @@ export default function Categorias() {
     return filteredItems.slice(start, start + pageSize);
   }, [filteredItems, page, pageSize]);
 
-  /* ===== MANEJO DE ERRORES DEL BACKEND (Versión Final Optimizada) ===== */
+  /* ===== MANEJO DE ERRORES DEL BACKEND (Mantiene el modal de error general para fallos de servidor o duplicidad) ===== */
   const handleBackendError = async (res: Response) => {
     if (!res.ok) {
       let errorMessage = `Error ${res.status}: Operación fallida.`;
@@ -166,39 +211,31 @@ export default function Categorias() {
 
         let rawMessage = null;
 
-        // 1. Intentar obtener el mensaje del campo 'message' principal (Formato estándar de NestJS)
         if (errorData && errorData.message) {
             rawMessage = errorData.message;
         }
 
-        // 2. Si el mensaje principal no es descriptivo, buscar en el objeto 'error' anidado
         if (!rawMessage && errorData.error && errorData.error.message) {
              rawMessage = errorData.error.message;
         }
-        
-        // 3. Si encontramos un mensaje descriptivo, lo formateamos
+
         if (rawMessage) {
-            errorMessage = Array.isArray(rawMessage) 
-                ? rawMessage.join(", ") 
+            errorMessage = Array.isArray(rawMessage)
+                ? rawMessage.join(", ")
                 : rawMessage;
         } else {
-            // Mensaje de respaldo si el JSON es válido pero no tiene el campo 'message' esperado
             errorMessage = `Error ${res.status}: ${errorData.error || errorData.statusCode || 'Respuesta desconocida'}.`;
         }
 
       } catch (e) {
-          // Si falla al parsear el JSON
           if (textBody) {
-               errorMessage = `Error ${res.status}: ${textBody}`;
+             errorMessage = `Error ${res.status}: ${textBody}`;
           } else {
-               errorMessage = `Error ${res.status}: Error de conexión o servidor.`;
+             errorMessage = `Error ${res.status}: Error de conexión o servidor.`;
           }
       }
-      
-      // Mostrar SOLO el mensaje descriptivo
+
       setErrorModal(errorMessage);
-      
-      // Lanzamos para detener la ejecución de la función CRUD
       throw new Error(errorMessage);
     }
   };
@@ -216,12 +253,12 @@ export default function Categorias() {
       const res = await authFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
+        
         body: JSON.stringify(payload),
       });
 
-      await handleBackendError(res); 
-
-      // Si todo va bien
+      await handleBackendError(res);
+      setSuccessModal(isEdit ? "Categoría actualizada correctamente" : "Categoría registrada correctamente");
       setModal(null);
       setSelected(null);
       await load();
@@ -234,10 +271,9 @@ export default function Categorias() {
     if (!selected) return;
     try {
       const res = await authFetch(`/api/categorias/${selected.CatId}`, { method: "DELETE" });
-      
-      await handleBackendError(res); 
 
-      // Si todo va bien
+      await handleBackendError(res);
+      setSuccessModal("Categoría desactivada con éxito");
       setModal(null);
       setSelected(null);
       await load();
@@ -254,8 +290,7 @@ export default function Categorias() {
       });
 
       await handleBackendError(res);
-      
-      // Si todo va bien
+      setSuccessModal("Categoría reactivada con éxito");
       setModal(null);
       setSelected(null);
       await load();
@@ -268,12 +303,12 @@ export default function Categorias() {
     setErrorModal(null);
   }
 
-  /* ===== UI ===== */
+  /* ===== UI (Misma que antes) ===== */
   return (
     <>
       {error && <div className="error">{error}</div>}
 
-      {/* ===== FILTROS ===== */}
+      {/* ... (Filtros y Tabla) ... */}
       <div className="filters-card">
         <h3 className="card-title">Filtros</h3>
 
@@ -304,7 +339,6 @@ export default function Categorias() {
         </button>
       </div>
 
-      {/* ===== TABLA ===== */}
       <div className="table-card">
         <h3 className="card-title">Listado de Categorías</h3>
 
@@ -362,7 +396,6 @@ export default function Categorias() {
         </div>
       </div>
 
-      {/* ===== PAGINACIÓN ===== */}
       <div className="pagination">
         <button
           className="btn-secondary"
@@ -384,6 +417,7 @@ export default function Categorias() {
           Siguiente ➡
         </button>
       </div>
+      {/* ... (Fin de Filtros y Tabla) ... */}
 
       {/* ===== MODALES DE OPERACIÓN ===== */}
       {modal && (
@@ -407,27 +441,41 @@ export default function Categorias() {
               />
             )}
 
-            {modal === "delete" && (
+            {modal === "delete" && selected && (
               <>
                 <h3>¿Desactivar categoría?</h3>
                 <p>No estará disponible para selección</p>
-                <button className="btn danger" onClick={deactivate}>Desactivar</button>
-                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                <div className="modal-actions">
+                  <button className="btn danger" onClick={deactivate}>Desactivar</button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                </div>              
               </>
             )}
 
-            {modal === "reactivate" && (
+            {modal === "reactivate" && selected && (
               <>
                 <h3>¿Reactivar categoría?</h3>
-                <button className="btn" onClick={reactivate}>Reactivar</button>
-                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                <p>Volverá a estar disponible para selección</p>
+                <div className="modal-actions">
+                  <button className="btn" onClick={reactivate}>Reactivar</button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                </div>
               </>
             )}
           </div>
         </div>
       )}
 
-      {/* ===== MODAL DE ERROR ===== */}
+      {successModal && (
+        <div className="modal-backdrop">
+          <div className="modal success-modal">
+            <h3 className="success-title">✅ Operación Exitosa</h3>
+            <p>{successModal}</p>
+            <button className="btn" onClick={() => setSuccessModal(null)}>Aceptar</button>
+          </div>
+        </div>
+      )}
+      {/* ===== MODAL DE ERROR (Backend) ===== */}
       {errorModal && (
         <div className="modal-backdrop">
           <div className="modal error-modal">

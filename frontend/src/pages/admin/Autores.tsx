@@ -14,7 +14,7 @@ type Autor = {
   AutFecCre?: string;
 };
 
-/* ================= FORMULARIO ================= */
+/* ================= FORMULARIO (ACTUALIZADO CON VALIDACIÓN FRONTEND) ================= */
 function AutorForm({
   initial,
   onSave,
@@ -31,11 +31,14 @@ function AutorForm({
     AutEma: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  // Nuevo estado para mostrar errores de validación del frontend
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initial) {
-        setForm({ AutNom: "", AutApe: "", AutDoc: "", AutEma: "" });
-        return;
+      setForm({ AutNom: "", AutApe: "", AutDoc: "", AutEma: "" });
+      setValidationError(null);
+      return;
     }
     setForm({
       AutNom: initial.AutNom ?? "",
@@ -43,11 +46,42 @@ function AutorForm({
       AutDoc: initial.AutDoc ?? "",
       AutEma: initial.AutEma ?? "",
     });
+    setValidationError(null);
   }, [initial]);
 
+  // Manejador que limpia el error al escribir
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    if (validationError) {
+      setValidationError(null);
+    }
+  };
+
+  // Función de validación de campos obligatorios
+  const validate = () => {
+    if (!form.AutNom.trim()) {
+      setValidationError("El nombre del autor es obligatorio.");
+      return false;
+    }
+    if (!form.AutApe.trim()) {
+      setValidationError("El apellido del autor es obligatorio.");
+      return false;
+    }
+    if (!form.AutDoc.trim()) {
+      setValidationError("El documento del autor es obligatorio.");
+      return false;
+    }
+    setValidationError(null);
+    return true;
+  }
+
   const submit = async () => {
-    // Validaciones básicas de campos requeridos
-    if (isSaving || !form.AutNom.trim() || !form.AutApe.trim() || !form.AutDoc.trim()) return;
+    // 1. Validar en el frontend
+    if (!validate()) { 
+      return;
+    }
+    
+    if (isSaving) return;
 
     setIsSaving(true);
     try {
@@ -69,30 +103,50 @@ function AutorForm({
 
       <div className="form-grid">
         <input
-          placeholder="Nombres"
+          placeholder="Nombres (obligatorio)"
+          name="AutNom" // Nombre para el handler genérico
           value={form.AutNom}
-          onChange={(e) => setForm({ ...form, AutNom: e.target.value })}
+          onChange={handleChange} // Usando handleChange
           disabled={isSaving}
         />
         <input
-          placeholder="Apellidos"
+          placeholder="Apellidos (obligatorio)"
+          name="AutApe" // Nombre para el handler genérico
           value={form.AutApe}
-          onChange={(e) => setForm({ ...form, AutApe: e.target.value })}
+          onChange={handleChange} // Usando handleChange
           disabled={isSaving}
         />
         <input
-          placeholder="Documento"
+          placeholder="Documento (obligatorio)"
+          name="AutDoc" // Nombre para el handler genérico
           value={form.AutDoc}
-          onChange={(e) => setForm({ ...form, AutDoc: e.target.value })}
+          onChange={handleChange} // Usando handleChange
           disabled={isSaving}
         />
         <input
           placeholder="Correo (opcional)"
+          name="AutEma" // Nombre para el handler genérico
           value={form.AutEma}
-          onChange={(e) => setForm({ ...form, AutEma: e.target.value })}
+          onChange={handleChange} // Usando handleChange
           disabled={isSaving}
         />
       </div>
+
+      {/* ERROR DE VALIDACIÓN DEL FRONTEND */}
+      {validationError && (
+        <p
+          style={{
+            color: "#dc3545", // Rojo (Danger)
+            fontSize: "0.9em",
+            fontWeight: "bold",
+            textAlign: "center",
+            marginTop: "5px",
+            marginBottom: "5px",
+          }}
+        >
+          {validationError}
+        </p>
+      )}
 
       <div className="modal-actions">
         <button className="btn" onClick={submit} disabled={isSaving}>
@@ -120,7 +174,7 @@ export default function Autores() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorModal, setErrorModal] = useState<string | null>(null); // Estado para errores de CRUD
-
+  const [successModal, setSuccessModal] = useState<string | null>(null);
   // filtros
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"activos" | "desactivados">("activos");
@@ -190,9 +244,9 @@ export default function Autores() {
       } catch (e) {
           // 5. Si falla al parsear el JSON
           if (textBody) {
-               errorMessage = `Error ${res.status}: ${textBody}`;
+             errorMessage = `Error ${res.status}: ${textBody}`;
           } else {
-               errorMessage = `Error ${res.status}: Error de conexión o servidor.`;
+             errorMessage = `Error ${res.status}: Error de conexión o servidor.`;
           }
       }
       
@@ -268,7 +322,7 @@ export default function Autores() {
         });
 
         await handleBackendError(res); // Manejo de errores
-
+        setSuccessModal(isEdit ? "Autor actualizado correctamente" : "Autor registrado correctamente");
         setModal(null);
         setSelected(null);
         await load();
@@ -282,7 +336,7 @@ export default function Autores() {
     try {
         const res = await authFetch(`/api/autores/${selected.AutId}`, { method: "DELETE" });
         await handleBackendError(res); // Manejo de errores
-        
+        setSuccessModal("Autor desactivado con éxito");
         setModal(null);
         setSelected(null);
         await load();
@@ -298,7 +352,7 @@ export default function Autores() {
             method: "PATCH",
         });
         await handleBackendError(res); // Manejo de errores
-
+        setSuccessModal("Autor reactivado con éxito");
         setModal(null);
         setSelected(null);
         await load();
@@ -366,7 +420,8 @@ export default function Autores() {
             <thead>
               <tr>
                 <th>#</th>
-                <th>Nombre</th>
+                <th>Nombres</th>
+                <th>Apellidos</th>
                 <th>Documento</th>
                 <th>Correo</th>
                 <th>Activo</th>
@@ -377,7 +432,8 @@ export default function Autores() {
               {paginatedItems.map((a, i) => (
                 <tr key={a.AutId}>
                   <td>{(page - 1) * pageSize + i + 1}</td>
-                  <td>{a.AutNom} {a.AutApe}</td>
+                  <td>{a.AutNom}</td>
+                  <td>{a.AutApe}</td>
                   <td>{a.AutDoc}</td>
                   <td>{a.AutEma || "—"}</td>
                   <td>{a.AutAct ? "Sí" : "No"}</td>
@@ -450,7 +506,7 @@ export default function Autores() {
             {modal === "delete" && selected && (
               <>
                 <h3>¿Desactivar autor?</h3>
-                <p>El autor **{selected.AutNom} {selected.AutApe}** será marcado como inactivo.</p>
+                <p>El autor <b>{selected.AutNom} {selected.AutApe}</b> será marcado como inactivo.</p>
                 <button className="btn danger" onClick={deactivate}>Desactivar</button>
                 <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
               </>
@@ -459,7 +515,7 @@ export default function Autores() {
             {modal === "reactivate" && selected && (
               <>
                 <h3>¿Reactivar autor?</h3>
-                <p>El autor **{selected.AutNom} {selected.AutApe}** volverá a estar activo en el sistema.</p>
+                <p>El autor <b>{selected.AutNom} {selected.AutApe}</b> volverá a estar activo en el sistema.</p>
                 <button className="btn" onClick={reactivate}>Reactivar</button>
                 <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
               </>
@@ -467,7 +523,16 @@ export default function Autores() {
           </div>
         </div>
       )}
-      
+      {/* ===== MODAL DE ÉXITO (AGREGADO AL FINAL) ===== */}
+      {successModal && (
+        <div className="modal-backdrop">
+          <div className="modal success-modal">
+            <h3 className="success-title">✅ Operación Exitosa</h3>
+            <p>{successModal}</p>
+            <button className="btn" onClick={() => setSuccessModal(null)}>Aceptar</button>
+          </div>
+        </div>
+      )}
       {/* ===== MODAL DE ERROR (Muestra solo el mensaje descriptivo) ===== */}
       {errorModal && (
         <div className="modal-backdrop">

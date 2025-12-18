@@ -13,19 +13,40 @@ type LoginForm = {
 export default function Login() {
   const navigate = useNavigate();
   const { saveSession } = useAuth();
-  const { handleLogin, loading, error: loginError } = useAuthLogin();
+  const { handleLogin, loading, error: loginBackendError } = useAuthLogin();
+  const [showPassword, setShowPassword] = useState(false);
 
   const [form, setForm] = useState<LoginForm>({ username: '', password: '' });
+  // El error ahora maneja tanto la validación de campos vacíos como los errores del backend
   const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (error) setError('');
+  };
+
+  const validateForm = (): boolean => {
+    if (!form.username.trim()) {
+      setError('El correo electrónico es obligatorio.');
+      return false;
+    }
+    if (!form.password.trim()) {
+      setError('La contraseña es obligatoria.');
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
+    // 2. Ejecutar la validación de frontend primero
+    if (!validateForm()) {
+      return;
+    }
+
+    // Si la validación pasa, intentamos el login
     const result = await handleLogin(form.username, form.password);
 
     if (result.success) {
@@ -38,8 +59,7 @@ export default function Login() {
       setError('Respuesta de inicio de sesión inválida');
       return;
     }
-
-    setError(loginError || 'Error al iniciar sesión');
+    setError(loginBackendError || 'Error al iniciar sesión');
   };
 
   return (
@@ -62,26 +82,34 @@ export default function Login() {
               placeholder="Correo electrónico"
               value={form.username}
               onChange={handleChange}
-              required
               disabled={loading}
               autoComplete="email"
             />
           </div>
-
           <div className="input-group">
             <span className="icon">🔒</span>
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'} // 2. Tipo dinámico
               name="password"
               placeholder="Contraseña"
               value={form.password}
               onChange={handleChange}
-              required
               disabled={loading}
               autoComplete="current-password"
             />
+            {/* 3. Botón del ojo */}
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() => setShowPassword(!showPassword)}
+              tabIndex={-1} 
+            >
+              {showPassword ? '👁️‍🗨️' : '👁️'}
+            </button>
           </div>
+          
 
+          {/* Este elemento mostrará tanto los errores de campo vacío como los errores de login, con el mismo estilo. */}
           {error && <p className="login-error">{error}</p>}
 
           <button type="submit" className="btn primary" disabled={loading}>

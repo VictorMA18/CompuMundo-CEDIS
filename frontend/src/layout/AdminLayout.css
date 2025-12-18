@@ -1,12 +1,13 @@
-/* Contenedor general */
+/* Estructura Base */
 .admin-root {
   height: 100vh;
   width: 100vw;
   display: flex;
   flex-direction: column;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* HEADER SUPERIOR BLANCO */
+/* Header Principal (Superior) */
 .top-header {
   height: 70px;
   background: #ffffff;
@@ -14,7 +15,7 @@
   align-items: center;
   gap: 15px;
   padding: 0 25px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e6ed;
   z-index: 10;
 }
 
@@ -22,19 +23,20 @@
   height: 45px;
 }
 
-.top-header h2 {
+.header-text h2 {
   margin: 0;
   font-size: 16px;
-  color: #222;
+  font-weight: 700;
+  color: #2c3e50;
 }
 
-.top-header p {
+.header-text p {
   margin: 0;
   font-size: 13px;
-  color: #666;
+  color: #7f8c8d;
 }
 
-/* Layout principal */
+/* Cuerpo del Layout */
 .admin-layout {
   height: calc(100vh - 70px);
   flex: 1;
@@ -42,26 +44,54 @@
   overflow: hidden;
 }
 
-/* Contenido */
+/* Área de Contenido */
 .content {
   flex: 1;
-  background: #f4f6f8;
-  padding: 20px;
+  background: #f4f7f6; /* Fondo gris muy tenue para resaltar las tarjetas blancas */
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
 }
-.page-title {
-  padding: 20px;
+
+/* CABECERA DE TÍTULO (La que pediste) */
+.page-title-bar {
+  background: #ffffff;
+  padding: 25px 40px;
+  border-bottom: 1px solid #e0e6ed;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
-.page-title h1 {
+.page-title-bar h1 {
   margin: 0;
-  font-size: 26px;
-  color: black;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a1a;
+  position: relative;
+  display: inline-block;
 }
+
+/* Detalle decorativo opcional: línea azul bajo el título */
+.page-title-bar h1::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -5px;
+  width: 30px;
+  height: 3px;
+  background: #007bff; 
+  border-radius: 2px;
+}
+
+/* Contenedor del Outlet (Tablas, CRUDs, etc) */
 .page-content {
   width: 100%;
-  max-width: 100%;
-  padding: 0 20px; /* Puedes ajustar */
+  padding: 0 40px 40px 40px;
   box-sizing: border-box;
+  animation: fadeIn 0.3s ease-in;
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
