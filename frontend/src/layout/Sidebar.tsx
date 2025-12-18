@@ -44,9 +44,7 @@ export default function Sidebar() {
     { label: 'Home', path: '/app', icon: '🏠', roles: ['administrador']},
     { label: 'Dashboard', path: '/app/dashboard', icon: '📊', roles: ['administrador', 'bibliotecario', 'consultor']},
     { label: 'Préstamos', path: '/app/prestamos', icon: '📚', roles: ['administrador', 'bibliotecario'] },
-    { label: 'Préstamos', path: '/app/prestamos_c', icon: '📚', roles: ['consultor'] },
     { label: 'Lectores', path: '/app/lectores', icon: '👥', roles: ['administrador', 'bibliotecario'] },
-    { label: 'Lectores', path: '/app/lectores_c', icon: '👥', roles: ['consultor'] },
     { label: 'Documentos', path: '/app/documentos', icon: '📑', roles: ['administrador', 'bibliotecario']},
     { label: 'Documentos', path: '/app/documentos_c', icon: '📑', roles: ['consultor'] },
     { label: 'Autores', path: '/app/autores', icon: '✍️', roles: ['administrador', 'bibliotecario']},
@@ -54,11 +52,10 @@ export default function Sidebar() {
     { label: 'Material físico', path: '/app/material-fisico', icon: '📦', roles: ['administrador', 'bibliotecario'] },
     { label: 'Material virtual', path: '/app/material-virtual', icon: '💾', roles: ['administrador', 'bibliotecario'] },
     { label: 'Usuarios', path: '/app/usuarios', icon: '👤', roles: ['administrador'] },
-    { label: 'Usuarios', path: '/app/usuarios_b', icon: '👤', roles: ['bibliotecario', 'consultor'] },
+    { label: 'Usuarios', path: '/app/usuarios_b', icon: '👤', roles: ['bibliotecario'] },
     { label: 'Categorías', path: '/app/configuracion/categorias', icon: '🏷️', roles: ['administrador', 'bibliotecario'] },
     { label: 'Categorías', path: '/app/configuracion/categorias_c', icon: '🏷️', roles: ['consultor'] },
     { label: 'Reportes', path: '/app/reportes', icon: '📑', roles: ['administrador', 'bibliotecario'] },
-    { label: 'Reportes', path: '/app/reportes_c', icon: '📑', roles: ['consultor'] },
   ], []);
 
   const filteredMenu = useMemo(() => {

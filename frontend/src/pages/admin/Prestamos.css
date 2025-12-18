@@ -176,15 +176,16 @@ tbody tr:hover {
 /* =========================
    MODAL WINDOW
 ========================= */
+/* Ajusta el tamaño del contenedor blanco */
 .modal {
-  background: #ffffff;
-  width: 520px;
-  max-width: 95%;
-  border-radius: 14px;
-  padding: 22px 25px;
-  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.3);
-  animation: modalFade 0.25s ease;
-  color: #222;
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;          /* Ocupa el 90% del ancho en móviles */
+  max-width: 600px;    /* No superará los 600px en pantallas grandes */
+  max-height: 85vh;    /* Evita que sea más alto que la pantalla */
+  overflow-y: auto;    /* Permite scroll interno si el contenido es mucho */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
 /* Animación */

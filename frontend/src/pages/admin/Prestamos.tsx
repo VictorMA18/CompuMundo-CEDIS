@@ -23,6 +23,12 @@ export default function Prestamos() {
   const [newPrestamoLector, setNewPrestamoLector] = useState<string>('');
   const [newPrestamoMaterial, setNewPrestamoMaterial] = useState<string>('');
   const [newPrestamoObs, setNewPrestamoObs] = useState('');
+  // NUEVO: Estado para el texto de búsqueda
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ id: number; type: 'devolver' } | null>(null);
 
   // 1. Carga Inicial Segura
   useEffect(() => {
@@ -70,50 +76,60 @@ export default function Prestamos() {
   };
 
   const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPrestamoLector || !newPrestamoMaterial) {
-      alert('Seleccione un lector y un material');
-      return;
-    }
+  e.preventDefault();
+  
+  // 1. Validaciones UI
+  if (!newPrestamoLector || !newPrestamoMaterial) {
+    setErrorMsg('Por favor, seleccione un lector y un material válido.');
+    return;
+  }
 
-    // Buscamos el objeto completo basado en el ID seleccionado
-    const materialSelected = materiales.find(m => m.MatFisId === Number(newPrestamoMaterial));
+  const materialSelected = materiales.find(m => m.MatFisId === Number(newPrestamoMaterial));
+
+  if (!materialSelected || !materialSelected.materialBibliografico) {
+    setErrorMsg("Error crítico: El material seleccionado no tiene datos bibliográficos.");
+    return;
+  }
+
+  try {
+    setLoading(true); // Opcional: bloqueo visual
+    await prestamosService.create({
+      LecId: Number(newPrestamoLector),
+      PreObs: newPrestamoObs,
+      detalles: [{
+        MatFisId: materialSelected.MatFisId,
+        MatBibId: materialSelected.materialBibliografico.MatBibId,
+        PreTip: 'FISICO'
+      }]
+    });
     
-    // Validación extra por si algo falla
-    if (!materialSelected || !materialSelected.materialBibliografico) {
-        alert("Error: El material seleccionado no tiene datos bibliográficos válidos.");
-        return;
-    }
+    // ÉXITO
+    setModal(null); // Cierra el formulario
+    setSuccessMsg('¡Préstamo registrado exitosamente!');
+    loadData();     // Recarga la tabla
+  } catch (error: any) {
+    // ERROR
+    handleBackendError(error);
+  } finally {
+    setLoading(false);
+  }
+};
 
-    try {
-      await prestamosService.create({
-        LecId: Number(newPrestamoLector),
-        PreObs: newPrestamoObs,
-        detalles: [
-          {
-            MatFisId: materialSelected.MatFisId,
-            MatBibId: materialSelected.materialBibliografico.MatBibId,
-            PreTip: 'FISICO'
-          }
-        ]
-      });
-      alert('Préstamo registrado con éxito');
-      setModal(null);
-      loadData(); 
-    } catch (error: any) {
-      alert(error.message);
-    }
+  const requestDevolucion = (detalleId: number) => {
+    setConfirmAction({ id: detalleId, type: 'devolver' });
+    console.log("Solicitud de devolución para detalle ID:", detalleId); 
   };
+  const executeDevolucion = async () => {
+    if (!confirmAction) return;
 
-  const handleDevolucion = async (detalleId: number) => {
-    if (!confirm('¿Confirmar devolución de este libro?')) return;
     try {
-      await prestamosService.devolverDetalle(detalleId);
-      alert('Libro devuelto correctamente');
-      setModal(null);
+      await prestamosService.devolverDetalle(confirmAction.id);
+      setConfirmAction(null); // Cierra confirmación
+      setModal(null);         // Cierra detalle si estaba abierto
+      setSuccessMsg('Libro devuelto correctamente.');
       loadData();
     } catch (error) {
-      alert('Error al procesar devolución');
+      handleBackendError(error);
     }
   };
 
@@ -126,11 +142,36 @@ export default function Prestamos() {
     const clase = estado === 'VIGENTE' ? 'vigente' : estado === 'VENCIDO' ? 'vencido' : 'devuelto';
     return <span className={`estado ${clase}`}>{estado}</span>;
   };
+  // Lógica de filtrado
+  const filteredPrestamos = prestamos.filter((p) => {
+    const term = searchTerm.toLowerCase();
+    
+    // Unimos nombre y apellido para buscar completo
+    const nombreLector = `${p.lector?.LecNom || ''} ${p.lector?.LecApe || ''}`.toLowerCase();
+    const dniLector = (p.lector?.LecDni || '').toLowerCase();
+    
+    // Obtenemos el título del primer libro (con seguridad contra fallos)
+    const tituloLibro = (p.detalles?.[0]?.materialBibliografico?.MatBibTit || '').toLowerCase();
+
+    // Retornamos true si alguna de las condiciones coincide
+    return nombreLector.includes(term) || dniLector.includes(term) || tituloLibro.includes(term);
+  });
+  const handleBackendError = (error: any) => {
+    console.error("Error capturado:", error);
+    // Intenta sacar el mensaje del backend (si usas axios o fetch con json)
+    const mensaje = error.response?.data?.message || error.message || "Ocurrió un error inesperado en el servidor.";
+    setErrorMsg(mensaje);
+  };
 
   return (
     <>
       <div className="filters-card">
-        <input className="input" placeholder="Buscar..." />
+        <input 
+          className="input" 
+          placeholder="Buscar por Lector, DNI o Libro..." 
+          value={searchTerm} // <--- Vinculamos valor
+          onChange={(e) => setSearchTerm(e.target.value)} // <--- Actualizamos estado
+        />
         <button className="btn-new" onClick={openNewModal}>
           ➕ Nuevo Préstamo
         </button>
@@ -150,7 +191,7 @@ export default function Prestamos() {
               </tr>
             </thead>
             <tbody>
-              {prestamos.map((p) => (
+              {filteredPrestamos.map((p) => (
                 <tr key={p.PreId}>
                   <td>{p.PreId}</td>
                   <td>
@@ -195,31 +236,68 @@ export default function Prestamos() {
                   <p><b>Observación:</b> {selectedPrestamo.PreObs || '-'}</p>
                 </div>
 
-                <h4>Libros Prestados:</h4>
-                <div className="detalles-list" style={{marginTop: '10px', maxHeight: '200px', overflowY: 'auto'}}>
-                  {selectedPrestamo.detalles.map(det => (
-                    <div key={det.PreDetId} className="detalle-item" style={{border: '1px solid #ddd', padding: '10px', marginBottom: '5px', borderRadius: '4px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                      <div>
-                        {/* 4. MÁS PROTECCIÓN CONTRA UNDEFINED */}
-                        <strong>{det.materialBibliografico?.MatBibTit || '(Título no disponible)'}</strong>
-                        <br />
-                        <small>Cód: {det.materialFisico?.MatFisCodEje || 'S/C'}</small>
-                        <br />
-                        {renderEstado(det.PreEst)}
-                      </div>
-                      
-                      {det.PreEst !== 'DEVUELTO' && (
-                        <button 
-                          className="btn-small" 
-                          style={{backgroundColor: '#4CAF50', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px'}}
-                          onClick={() => handleDevolucion(det.PreDetId)}
-                        >
-                          Devolver
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                {/* --- DENTRO DEL MODAL 'VIEW' --- */}
+<h4>Libros Prestados:</h4>
+<div className="detalles-list" style={{ marginTop: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+  {selectedPrestamo.detalles.map((det) => {
+    
+    // 1. LÓGICA DE RECUPERACIÓN DE DATOS MÁS ROBUSTA
+    // Intentamos buscar el título directamente O dentro del material físico
+    const tituloLibro = 
+      det.materialBibliografico?.MatBibTit || 
+      "⚠️ Título no encontrado";
+
+    const codigoLibro = det.materialFisico?.MatFisCodEje || "S/C";
+
+    return (
+      <div 
+        key={det.PreDetId} 
+        className="detalle-item" 
+        style={{
+          borderBottom: '1px solid #eee', 
+          padding: '12px 0', 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          gap: '10px'
+        }}
+      >
+        {/* COLUMNA IZQUIERDA: INFORMACIÓN DEL LIBRO */}
+        <div style={{ flex: 1 }}> 
+          <strong style={{ fontSize: '1.05rem', color: '#333', display: 'block' }}>
+            {tituloLibro}
+          </strong>
+          <small style={{ color: '#666' }}>
+            Cód. Ejemplar: <b>{codigoLibro}</b>
+          </small>
+          <div style={{ marginTop: '4px' }}>
+            {renderEstado(det.PreEst)}
+          </div>
+        </div>
+        
+        {/* COLUMNA DERECHA: BOTÓN DE ACCIÓN */}
+        {det.PreEst !== 'DEVUELTO' && (
+          <button 
+            className="btn-small" 
+            style={{
+              backgroundColor: '#4CAF50', 
+              color: 'white', 
+              border: 'none', 
+              padding: '8px 12px', 
+              cursor: 'pointer', 
+              borderRadius: '6px',
+              fontWeight: '500',
+              flexShrink: 0 /* Evita que el botón se aplaste */
+            }}
+            onClick={() => requestDevolucion(det.PreDetId)}
+          >
+            Devolver
+          </button>
+        )}
+      </div>
+    );
+  })}
+</div>
 
                 <div className="modal-actions">
                   <button className="btn secondary" onClick={closeModal}>Cerrar</button>
@@ -289,6 +367,56 @@ export default function Prestamos() {
                 </form>
               </>
             )}
+          </div>
+        </div>
+      )}
+      {confirmAction && (
+        <div className="modal-backdrop" style={{ zIndex: 9999 }}> {/* <--- ESTO ES LA CLAVE */}
+          <div className="modal modal-sm" style={{ textAlign: 'center' }}>
+            <h3>¿Confirmar Devolución?</h3>
+            <p>El libro cambiará a estado "DISPONIBLE".</p>
+            
+            <div className="modal-actions" style={{ justifyContent: 'center' }}>
+              {/* Botón que ejecuta la acción real */}
+              <button className="btn" onClick={executeDevolucion}>
+                Sí, Devolver
+              </button>
+              
+              {/* Botón para cancelar solo la confirmación */}
+              <button className="btn secondary" onClick={() => setConfirmAction(null)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Éxito (También con zIndex alto) */}
+      {successMsg && (
+        <div className="modal-backdrop" style={{ zIndex: 9999 }}>
+          <div className="modal modal-sm success-modal">
+            <h3 className="success-title">✅ Operación Exitosa</h3>
+            <p>{successMsg}</p>
+            <div className="modal-actions" style={{ justifyContent: 'center' }}>
+              <button className="btn" onClick={() => setSuccessMsg(null)}>
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Error (También con zIndex alto) */}
+      {errorMsg && (
+        <div className="modal-backdrop" style={{ zIndex: 9999 }}>
+          <div className="modal modal-sm error-modal">
+            <h3 className="error-title">❌ Error</h3>
+            <p>{errorMsg}</p>
+            <div className="modal-actions" style={{ justifyContent: 'center' }}>
+              <button className="btn danger" onClick={() => setErrorMsg(null)}>
+                Entendido
+              </button>
+            </div>
           </div>
         </div>
       )}
