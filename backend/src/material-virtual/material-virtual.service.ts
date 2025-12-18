@@ -12,6 +12,13 @@ const materialVirtualSelect = {
   MatVirUrlAcc: true,
   MatVirForArc: true,
   MatVirAct: true,
+  materialBibliografico: {
+    select: {
+      MatBibId: true,
+      MatBibTit: true, 
+      MatBibCod: true
+    }
+  }
 };
 
 @Injectable()
