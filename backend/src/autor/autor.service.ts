@@ -115,6 +115,20 @@ export class AutorService {
     return this.withTransaction(async (tx) => {
       await this.findOne(id, tx);
 
+      // Validar documento único si se quiere cambiar AutDoc
+      if (updateAutorDto.AutDoc) {
+        const autorDoc = await tx.tB_AUTOR.findFirst({
+          where: {
+            AutDoc: updateAutorDto.AutDoc,
+            AutId: { not: id },
+          },
+          select: { AutId: true },
+        });
+        if (autorDoc) {
+          throw new BadRequestException('El documento ya está en uso por otro autor.');
+        }
+      }
+
       if (updateAutorDto.AutEma) {
         const autorCorreo = await tx.tB_AUTOR.findFirst({
           where: {
