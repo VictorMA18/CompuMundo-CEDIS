@@ -68,7 +68,7 @@ function AutorForm({
       return false;
     }
     if (!form.AutDoc.trim()) {
-      setValidationError("El documento del autor es obligatorio.");
+      setValidationError("El DOC del autor es obligatorio.");
       return false;
     }
     setValidationError(null);
@@ -102,34 +102,46 @@ function AutorForm({
       <h3>{initial ? "Editar autor" : "Registrar autor"}</h3>
 
       <div className="form-grid">
-        <input
-          placeholder="Nombres (obligatorio)"
-          name="AutNom" // Nombre para el handler genérico
-          value={form.AutNom}
-          onChange={handleChange} // Usando handleChange
-          disabled={isSaving}
-        />
-        <input
-          placeholder="Apellidos (obligatorio)"
-          name="AutApe" // Nombre para el handler genérico
-          value={form.AutApe}
-          onChange={handleChange} // Usando handleChange
-          disabled={isSaving}
-        />
-        <input
-          placeholder="Documento (obligatorio)"
-          name="AutDoc" // Nombre para el handler genérico
-          value={form.AutDoc}
-          onChange={handleChange} // Usando handleChange
-          disabled={isSaving}
-        />
-        <input
-          placeholder="Correo (opcional)"
-          name="AutEma" // Nombre para el handler genérico
-          value={form.AutEma}
-          onChange={handleChange} // Usando handleChange
-          disabled={isSaving}
-        />
+        <div className="form-field">
+          <label htmlFor="AutNom">Nombres</label>
+          <input
+            placeholder="Nombres (obligatorio)"
+            name="AutNom" // Nombre para el handler genérico
+            value={form.AutNom}
+            onChange={handleChange} // Usando handleChange
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="AutApe">Apellidos</label>
+          <input
+            placeholder="Apellidos (obligatorio)"
+            name="AutApe" // Nombre para el handler genérico
+            value={form.AutApe}
+            onChange={handleChange} // Usando handleChange
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+           <label htmlFor="AutDoc">DOC</label>
+          <input
+            placeholder="DOC (obligatorio)"
+            name="AutDoc" // Nombre para el handler genérico
+            value={form.AutDoc}
+            onChange={handleChange} // Usando handleChange
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+         <label htmlFor="AutEma">Correo electrónico (Opcional)</label>
+          <input
+            placeholder="Correo (opcional)"
+            name="AutEma" 
+            value={form.AutEma}
+            onChange={handleChange} 
+            disabled={isSaving}
+          />
+        </div>
       </div>
 
       {/* ERROR DE VALIDACIÓN DEL FRONTEND */}
@@ -215,6 +227,7 @@ export default function Autores() {
                 const messages: { [key: string]: string } = {
                     'AutDoc should not be empty': 'El documento no puede estar vacío.',
                     'AutNom should not be empty': 'El nombre no puede estar vacío.',
+                    'Unique constraint failed': 'Este número de documento ya pertenece a otro autor.',
                     'AutApe should not be empty': 'El apellido no puede estar vacío.',
                     'AutEma must be an email': 'El correo electrónico no tiene un formato válido.',
                     // Asegúrate de agregar cualquier otro error de validación que encuentres
@@ -422,7 +435,7 @@ export default function Autores() {
                 <th>#</th>
                 <th>Nombres</th>
                 <th>Apellidos</th>
-                <th>Documento</th>
+                <th>DOC</th>
                 <th>Correo</th>
                 <th>Activo</th>
                 <th>Acciones</th>
@@ -488,7 +501,7 @@ export default function Autores() {
               <>
                 <h3>Detalle del autor</h3>
                 <p><b>Nombre:</b> {selected.AutNom} {selected.AutApe}</p>
-                <p><b>Documento:</b> {selected.AutDoc}</p>
+                <p><b>DOC:</b> {selected.AutDoc}</p>
                 <p><b>Correo:</b> {selected.AutEma || "—"}</p>
                 <p><b>Activo:</b> {selected.AutAct ? "Sí" : "No"}</p>
                 <button className="btn" onClick={() => setModal(null)}>Cerrar</button>

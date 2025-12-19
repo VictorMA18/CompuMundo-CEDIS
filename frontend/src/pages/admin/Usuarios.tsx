@@ -100,52 +100,65 @@ function UsuarioForm({
       <h3>{initial ? "Editar usuario" : "Registrar usuario"}</h3>
 
       <div className="form-grid">
-        {/* Campo de Nombre */}
-        <input
-          placeholder="Nombre (obligatorio)"
-          name="UsuNom" 
-          value={form.UsuNom}
-          onChange={handleChange}
-          disabled={isSaving}
-        />
-        {/* Campo de Correo */}
-        <input
-          placeholder="Correo (obligatorio)"
-          name="UsuEma" 
-          value={form.UsuEma}
-          onChange={handleChange}
-          disabled={isSaving}
-        />
-        {/* Campo de Rol */}
-        <select
-          name="UsuTip" 
-          value={form.UsuTip}
-          onChange={handleChange}
-          disabled={isSaving}
-        >
-          <option value="administrador">Administrador</option>
-          <option value="bibliotecario">Bibliotecario</option>
-          <option value="consultor">Consultor</option>
-        </select>
-        
-        {/* Campo de Contraseña con el botón "ojo" */}
-        <div className="password-container"> 
+        <div className="form-field">
+          <label htmlFor="UsuNom">Nombre Completo</label>
+          {/* Campo de Nombre */}
           <input
-            type={showPassword ? "text" : "password"}
-            placeholder={initial ? "Nueva contraseña (opcional)" : "Contraseña (obligatoria)"}
-            name="UsuCon" 
-            value={form.UsuCon}
+            placeholder="Nombre (obligatorio)"
+            name="UsuNom" 
+            value={form.UsuNom}
             onChange={handleChange}
             disabled={isSaving}
           />
-          <button 
-            type="button" 
-            className="toggle-password-btn" 
-            onClick={() => setShowPassword(p => !p)}
+        </div>
+        <div className="form-field">
+          <label htmlFor="UsuEma">Correo Electrónico</label>
+          {/* Campo de Correo */}
+          <input
+            placeholder="Correo (obligatorio)"
+            name="UsuEma" 
+            value={form.UsuEma}
+            onChange={handleChange}
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="UsuTip">Rol de Usuario</label>
+          {/* Campo de Rol */}
+          <select
+            name="UsuTip" 
+            value={form.UsuTip}
+            onChange={handleChange}
             disabled={isSaving}
           >
-            {showPassword ? "👁️" : "🔒"} 
-          </button>
+            <option value="administrador">Administrador</option>
+            <option value="bibliotecario">Bibliotecario</option>
+            <option value="consultor">Consultor</option>
+          </select>
+        </div> 
+        <div className="form-field">
+          <label htmlFor="UsuCon">
+            {initial ? "Nueva Contraseña (opcional)" : "Contraseña"}
+          </label>
+          {/* Campo de Contraseña con el botón "ojo" */}
+          <div className="password-container"> 
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder={initial ? "Nueva contraseña (opcional)" : "Contraseña (obligatoria)"}
+              name="UsuCon" 
+              value={form.UsuCon}
+              onChange={handleChange}
+              disabled={isSaving}
+            />
+            <button 
+              type="button" 
+              className="toggle-password-btn" 
+              onClick={() => setShowPassword(p => !p)}
+              disabled={isSaving}
+            >
+              {showPassword ? "👁️" : "🔒"} 
+            </button>
+          </div>
         </div>
       </div>
 

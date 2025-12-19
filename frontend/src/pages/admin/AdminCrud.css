@@ -387,3 +387,30 @@ tbody tr:hover {
   width: 100%;
   box-sizing: border-box; /* Evita que el padding sume al ancho total */
 }
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Mantiene dos columnas */
+  gap: 20px;
+  margin-top: 10px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column; 
+  align-items: flex-start; 
+  gap: 5px;               
+}
+
+.form-field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;            /* Gris oscuro para legibilidad */
+  margin-bottom: 2px;
+}
+
+.form-field input, 
+.form-field select {
+  width: 100%;
+  box-sizing: border-box; /* Evita que el padding desborde el ancho */
+}
+

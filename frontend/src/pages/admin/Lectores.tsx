@@ -106,44 +106,59 @@ function LectorForm({
       <h3>{initial ? "Editar lector" : "Registrar lector"}</h3>
 
       <div className="form-grid">
-        <input
-          placeholder="Nombres (obligatorio)"
-          name="LecNom" // Añadido name
-          value={form.LecNom}
-          onChange={handleChange} // Usando handleChange genérico
-          disabled={isSaving}
-        />
-        <input
-          placeholder="Apellidos (obligatorio)"
-          name="LecApe" // Añadido name
-          value={form.LecApe}
-          onChange={handleChange} // Usando handleChange genérico
-          disabled={isSaving}
-        />
-        <input
-          placeholder="DNI (obligatorio)"
-          name="LecDni" // Añadido name
-          value={form.LecDni}
-          onChange={handleChange} // Usando handleChange genérico
-          disabled={isSaving}
-        />
-        <input
-          placeholder="Correo (opcional)"
-          name="LecEma" // Añadido name
-          value={form.LecEma}
-          onChange={handleChange} // Usando handleChange genérico
-          disabled={isSaving}
-        />
-        <select
-          name="LecTip" // Añadido name
-          value={form.LecTip}
-          onChange={handleChange} // Usando handleChange genérico
-          disabled={isSaving}
-        >
-          <option value="estudiante">Estudiante</option>
-          <option value="docente">Docente</option>
-          <option value="administrativo">Administrativo</option>
-        </select>
+        <div className='form-field'>
+          <label htmlFor="LecNom">Nombres</label>
+          <input
+            placeholder="Nombres (obligatorio)"
+            name="LecNom" // Añadido name
+            value={form.LecNom}
+            onChange={handleChange} // Usando handleChange genérico
+            disabled={isSaving}
+          />
+        </div>
+        <div className='form-field'>
+          <label htmlFor="LecApe">Apellidos</label>
+          <input
+            placeholder="Apellidos (obligatorio)"
+            name="LecApe" // Añadido name
+            value={form.LecApe}
+            onChange={handleChange} // Usando handleChange genérico
+            disabled={isSaving}
+          />
+        </div>
+        <div className='form-field'>
+          <label htmlFor="LecDni">DNI</label>
+          <input
+            placeholder="DNI (obligatorio)"
+            name="LecDni" // Añadido name
+            value={form.LecDni}
+            onChange={handleChange} // Usando handleChange genérico
+            disabled={isSaving}
+          />
+         </div>
+         <div className='form-field'>
+          <label htmlFor="LecEma">Correo</label>
+          <input
+            placeholder="Correo (opcional)"
+            name="LecEma" // Añadido name
+            value={form.LecEma}
+            onChange={handleChange} // Usando handleChange genérico
+            disabled={isSaving}
+          />
+        </div>
+        <div className='form-field'>
+          <label htmlFor="LecTip">Tipo</label>
+          <select
+            name="LecTip" // Añadido name
+            value={form.LecTip}
+            onChange={handleChange} // Usando handleChange genérico
+            disabled={isSaving}
+          >
+            <option value="estudiante">Estudiante</option>
+            <option value="docente">Docente</option>
+            <option value="administrativo">Administrativo</option>
+          </select>
+        </div>
       </div>
       
       {/* ERROR DE VALIDACIÓN DEL FRONTEND */}

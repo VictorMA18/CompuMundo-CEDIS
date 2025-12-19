@@ -1,14 +1,13 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import Home from '../pages/admin/Home';
+import Documentos_c from '../pages/consultor/Documentos_c';
 
 export default function AppIndex() {
   const { user } = useAuth();
   
-  if (user?.UsuTip === 'administrador') {
-    return <Home />;
+  if (user?.UsuTip === 'consultor') {
+    return <Documentos_c />;
   }
 
-  // Bibliotecarios y Consultores van al Dashboard
   return <Navigate to="dashboard" replace />;
 }

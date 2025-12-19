@@ -117,46 +117,55 @@ function MaterialFisicoForm({
   return (
     <>
       <h3>{initial ? "Editar Ejemplar" : "Registrar Ejemplar"}</h3>
-
-      <div className="form-grid">
-        <select
-          className="input"
-          value={form.MatBibId}
-          onChange={(e) => handleInputChange("MatBibId", Number(e.target.value))}
-          disabled={isSaving}
-        >
-          <option value={0}>Seleccione Documento Padre...</option>
-          {bibliograficos.map(b => (
-            <option key={b.MatBibId} value={b.MatBibId}>
-              {b.MatBibTit} ({b.MatBibCod})
-            </option>
-          ))}
-        </select>
-
-        <input
-          placeholder="Código Ejemplar (obligatorio)"
-          value={form.MatFisCodEje}
-          onChange={(e) => handleInputChange("MatFisCodEje", e.target.value)}
-          disabled={isSaving}
-        />
-
-        <select
-          className="input"
-          value={form.MatFisEst}
-          onChange={(e) => handleInputChange("MatFisEst", e.target.value)}
-          disabled={isSaving}
-        >
-          <option value="disponible">Disponible</option>
-          <option value="prestado">Prestado</option>
-          <option value="dañado">Dañado</option>
-        </select>
-
-        <input
-          placeholder="Ubicación (obligatorio)"
-          value={form.MatFisUbi}
-          onChange={(e) => handleInputChange("MatFisUbi", e.target.value)}
-          disabled={isSaving}
-        />
+    
+      <div className="form-grid"> 
+        <div className="form-field">
+          <label htmlFor="MatBibId">Documento Relacionado</label>  
+          <select
+            className="input"
+            value={form.MatBibId}
+            onChange={(e) => handleInputChange("MatBibId", Number(e.target.value))}
+            disabled={isSaving}
+          >
+            <option value={0}>Seleccione Documento Padre...</option>
+            {bibliograficos.map(b => (
+              <option key={b.MatBibId} value={b.MatBibId}>
+                {b.MatBibTit} ({b.MatBibCod})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-field">
+          <label htmlFor="MatFisCodEje">Código del Ejemplar</label>
+          <input
+            placeholder="Código Ejemplar (obligatorio)"
+            value={form.MatFisCodEje}
+            onChange={(e) => handleInputChange("MatFisCodEje", e.target.value)}
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="MatFisEst">Estado Actual</label>
+          <select
+            className="input"
+            value={form.MatFisEst}
+            onChange={(e) => handleInputChange("MatFisEst", e.target.value)}
+            disabled={isSaving}
+          >
+            <option value="disponible">Disponible</option>
+            <option value="prestado">Prestado</option>
+            <option value="dañado">Dañado</option>
+          </select>
+        </div>
+        <div className="form-field">
+          <label htmlFor="MatFisUbi">Ubicación Física</label>
+          <input
+            placeholder="Ubicación (obligatorio)"
+            value={form.MatFisUbi}
+            onChange={(e) => handleInputChange("MatFisUbi", e.target.value)}
+            disabled={isSaving}
+          />
+        </div>
       </div>
 
       {validationError && (

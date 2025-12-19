@@ -116,35 +116,42 @@ function MaterialVirtualForm({
       <h3>{initial ? "Editar Material Virtual" : "Registrar Material Virtual"}</h3>
 
       <div className="form-grid">
-        <select
-          className="input"
-          value={form.MatBibId}
-          onChange={(e) => handleInputChange("MatBibId", Number(e.target.value))}
-          disabled={isSaving}
-        >
-          <option value={0}>Seleccione Documento Padre...</option>
-          {bibliograficos.map(b => (
-            <option key={b.MatBibId} value={b.MatBibId}>
-              {b.MatBibTit} ({b.MatBibCod})
-            </option>
-          ))}
-        </select>
-
-        <input
-          className="input"
-          placeholder="URL de Acceso (http://...)"
-          value={form.MatVirUrlAcc}
-          onChange={(e) => handleInputChange("MatVirUrlAcc", e.target.value)}
-          disabled={isSaving}
-        />
-
-        <input
-          className="input"
-          placeholder="Formato (PDF, EPUB, etc.)"
-          value={form.MatVirForArc}
-          onChange={(e) => handleInputChange("MatVirForArc", e.target.value)}
-          disabled={isSaving}
-        />
+        <div className="form-field">
+          <label htmlFor="MatBibId">Documento Bibliográfico</label>
+          <select
+            className="input"
+            value={form.MatBibId}
+            onChange={(e) => handleInputChange("MatBibId", Number(e.target.value))}
+            disabled={isSaving}
+          >
+            <option value={0}>Seleccione Documento Padre...</option>
+            {bibliograficos.map(b => (
+              <option key={b.MatBibId} value={b.MatBibId}>
+                {b.MatBibTit} ({b.MatBibCod})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-field">
+          <label htmlFor="MatVirUrlAcc">URL de Acceso</label>
+          <input
+            className="input"
+            placeholder="URL de Acceso (http://...)"
+            value={form.MatVirUrlAcc}
+            onChange={(e) => handleInputChange("MatVirUrlAcc", e.target.value)}
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="MatVirForArc">Formato del Archivo</label>
+          <input
+            className="input"
+            placeholder="Formato (PDF, EPUB, etc.)"
+            value={form.MatVirForArc}
+            onChange={(e) => handleInputChange("MatVirForArc", e.target.value)}
+            disabled={isSaving}
+          />
+        </div>
       </div>
 
       {validationError && (

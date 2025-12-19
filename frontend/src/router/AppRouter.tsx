@@ -50,7 +50,11 @@ export default function AppRouter() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="documentos_c" element={<Documentos_c />} />
         <Route path="material-virtual" element={<MaterialVirtual />} />
-
+        <Route path="home" element={
+          <RoleGuard allowedRoles={['administrador']}>
+            <Home />
+          </RoleGuard>
+        } />
         <Route path="documentos" element={
           <RoleGuard allowedRoles={['administrador', 'bibliotecario']}>
             <Documentos />

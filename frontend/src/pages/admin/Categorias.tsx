@@ -76,23 +76,28 @@ function CategoriaForm({
       <h3>{initial ? "Editar categoría" : "Registrar categoría"}</h3>
 
       <div className="form-grid">
-        {/* Campo de Nombre (obligatorio) */}
-        <input
-          placeholder="Nombre de la categoría (Obligatorio)"
-          name="CatNom"
-          value={form.CatNom}
-          onChange={handleChange}
-          disabled={isSaving}
-        />
-
-        {/* Campo de Descripción */}
-        <input
-          placeholder="Descripción (opcional)"
-          name="CatDes"
-          value={form.CatDes}
-          onChange={handleChange}
-          disabled={isSaving}
-        />
+        <div className="form-field">
+          <label htmlFor="CatNom">Nombre de la Categoría</label>
+          {/* Campo de Nombre (obligatorio) */}
+          <input
+            placeholder="Nombre de la categoría (Obligatorio)"
+            name="CatNom"
+            value={form.CatNom}
+            onChange={handleChange}
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="CatDes">Descripción (Opcional)</label>
+          {/* Campo de Descripción */}
+          <input
+            placeholder="Descripción (opcional)"
+            name="CatDes"
+            value={form.CatDes}
+            onChange={handleChange}
+            disabled={isSaving}
+          />
+        </div>
       </div>
       {validationError && (
         <p

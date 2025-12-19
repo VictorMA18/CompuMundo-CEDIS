@@ -291,40 +291,49 @@ function DocumentoForm({
       <h3>{initial ? "Editar Documento" : "Registrar Documento"}</h3>
 
       <div className="form-grid">
-        <input
-          placeholder="Código (obligatorio)"
-          value={form.MatBibCod}
-          onChange={(e) => handleInputChange("MatBibCod", e.target.value)}
-          disabled={isDisabled}
-        />
-        <input
-          placeholder="Título (obligatorio)"
-          value={form.MatBibTit}
-          onChange={(e) => handleInputChange("MatBibTit", e.target.value)}
-          disabled={isDisabled}
-        />
-
-        <select
-          className="input"
-          value={form.CatId}
-          onChange={(e) => handleInputChange("CatId", Number(e.target.value))}
-          disabled={isCategoryLoading || isSaving}
-        >
-          {isCategoryLoading && <option value={0}>Cargando categorías...</option>}
-          {categories.map(cat => (
-            <option key={cat.CatId} value={cat.CatId}>
-              {cat.CatNom}
-            </option>
-          ))}
-        </select>
-        <div></div>
-
-        <div style={{ gridColumn: 'span 2' }}>
-          <AutorSelector
-            allAutores={autores}
-            selectedIds={form.selectedAutoresIds}
-            onChange={(ids) => handleInputChange("selectedAutoresIds", ids)}
+        <div className="form-field">
+          <label htmlFor="MatBibCod">Código del Documento</label>
+          <input
+            placeholder="Código (obligatorio)"
+            value={form.MatBibCod}
+            onChange={(e) => handleInputChange("MatBibCod", e.target.value)}
+            disabled={isDisabled}
           />
+        </div>
+        <div className="form-field">
+         <label htmlFor="MatBibTit">Título</label>
+          <input
+            placeholder="Título (obligatorio)"
+            value={form.MatBibTit}
+            onChange={(e) => handleInputChange("MatBibTit", e.target.value)}
+            disabled={isDisabled}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="CatId">Categoría</label>
+          <select
+            className="input"
+            value={form.CatId}
+            onChange={(e) => handleInputChange("CatId", Number(e.target.value))}
+            disabled={isCategoryLoading || isSaving}
+          >
+            {isCategoryLoading && <option value={0}>Cargando categorías...</option>}
+            {categories.map(cat => (
+              <option key={cat.CatId} value={cat.CatId}>
+                {cat.CatNom}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div></div>
+        <div style={{ gridColumn: 'span 2' }}>
+            <div className="form-field">
+              <AutorSelector
+                allAutores={autores}
+                selectedIds={form.selectedAutoresIds}
+                onChange={(ids) => handleInputChange("selectedAutoresIds", ids)}
+              />
+            </div>
         </div>
       </div>
 
@@ -547,7 +556,7 @@ export default function Documentos() {
                 <th>Título</th>
                 <th>Categoría</th>
                 <th>Formato</th>
-                <th>Físicos</th>
+                <th>Stock (Disp/Total)</th>
                 <th>Virtual</th>
                 <th>Autores</th>
                 <th>Activo</th>
