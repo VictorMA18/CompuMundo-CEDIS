@@ -66,9 +66,9 @@ export class MaterialBibliograficoService {
       });
       if (existente) {
         if (existente.MatBibAct) {
-          throw new BadRequestException('El código de material ya existe');
+          throw new BadRequestException('El código del documento bibliográfico ya existe');
         } else {
-          throw new BadRequestException('El código de material ya existe pero está desactivado. Debe reactivarse.');
+          throw new BadRequestException('El código del documento bibliográfico ya existe pero está desactivado. Debe reactivarse.');
         }
       }
 
@@ -242,9 +242,9 @@ export class MaterialBibliograficoService {
       },
     });
     if (!material)
-      throw new NotFoundException('Material bibliográfico no encontrado');
+      throw new NotFoundException('Documento bibliográfico no encontrado');
     if (!material.MatBibAct)
-      throw new BadRequestException('El material bibliográfico está desactivado');
+      throw new BadRequestException('El documento bibliográfico está desactivado');
 
     const totalFisicos = material.materialesFisicos.length;
     const disponiblesFisicos = material.materialesFisicos.filter(f => f.MatFisEst === 'disponible').length;
@@ -278,7 +278,7 @@ async update(
           where: { MatBibCod: updateMaterialBibliograficoDto.MatBibCod },
         });
         if (existente) {
-          throw new BadRequestException('El código de material ya existe');
+          throw new BadRequestException('El código del documento bibliográfico ya existe');
         }
       }
 
@@ -342,9 +342,9 @@ async update(
         select: materialSelect,
       });
       if (!material)
-        throw new NotFoundException('Material bibliográfico no encontrado');
+        throw new NotFoundException('Documento bibliográfico no encontrado');
       if (material.MatBibAct)
-        throw new BadRequestException('El material bibliográfico ya está activo');
+        throw new BadRequestException('El documento bibliográfico ya está activo');
 
       const reactivado = await tx.tB_MATERIAL_BIBLIOGRAFICO.update({
         where: { MatBibId: id },
