@@ -45,6 +45,21 @@ export class LectoresService {
         }
       }
 
+      // Validar correo único si se envía LecEma
+      if (data.LecEma) {
+        const correoExists = await tx.tB_LECTOR.findUnique({
+          where: { LecEma: data.LecEma },
+          select: lectorSelect,
+        });
+        if (correoExists) {
+          if (correoExists.LecAct) {
+            throw new BadRequestException('El correo electrónico ya está registrado');
+          } else {
+            throw new BadRequestException('El correo electrónico ya existe pero está desactivado. Debe reactivarse.');
+          }
+        }
+      }
+
       const payload = {
         LecDni: data.LecDni,
         LecNom: data.LecNom,
@@ -97,6 +112,24 @@ export class LectoresService {
             throw new BadRequestException('El DNI ya está registrado en otro lector');
           } else {
             throw new BadRequestException('El DNI ya existe en otro lector pero está desactivado. Debe reactivarse.');
+          }
+        }
+      }
+
+      // Validar correo único si se quiere cambiar LecEma
+      if (data.LecEma) {
+        const correoExists = await tx.tB_LECTOR.findFirst({
+          where: {
+            LecEma: data.LecEma,
+            LecId: { not: id },
+          },
+          select: lectorSelect,
+        });
+        if (correoExists) {
+          if (correoExists.LecAct) {
+            throw new BadRequestException('El correo electrónico ya está registrado en otro lector');
+          } else {
+            throw new BadRequestException('El correo electrónico ya existe en otro lector pero está desactivado. Debe reactivarse.');
           }
         }
       }

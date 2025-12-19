@@ -152,7 +152,7 @@ export class MaterialFisicoService {
           },
         });
         if (existente) {
-          throw new BadRequestException('Ya existe un ejemplar físico con ese código para ese material bibliográfico');
+          throw new BadRequestException('Ya existe un ejemplar físico con ese código para este documento bibliográfico');
         }
       }
 

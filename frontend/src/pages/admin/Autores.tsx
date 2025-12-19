@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import "./AdminCrud.css";
+import "./AdminCrud.css"; // Asegúrate de que este archivo CSS existe
 
 /* ================= TIPOS ================= */
 type Autor = {
@@ -14,14 +14,14 @@ type Autor = {
   AutFecCre?: string;
 };
 
-/* ================= FORMULARIO ================= */
+/* ================= FORMULARIO (ACTUALIZADO CON VALIDACIÓN FRONTEND) ================= */
 function AutorForm({
   initial,
   onSave,
   onCancel,
 }: {
   initial: Autor | null;
-  onSave: (data: any) => void;
+  onSave: (data: any) => Promise<void>;
   onCancel: () => void;
 }) {
   const [form, setForm] = useState({
@@ -30,26 +30,71 @@ function AutorForm({
     AutDoc: "",
     AutEma: "",
   });
+  const [isSaving, setIsSaving] = useState(false);
+  // Nuevo estado para mostrar errores de validación del frontend
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!initial) return;
+    if (!initial) {
+      setForm({ AutNom: "", AutApe: "", AutDoc: "", AutEma: "" });
+      setValidationError(null);
+      return;
+    }
     setForm({
       AutNom: initial.AutNom ?? "",
       AutApe: initial.AutApe ?? "",
       AutDoc: initial.AutDoc ?? "",
       AutEma: initial.AutEma ?? "",
     });
+    setValidationError(null);
   }, [initial]);
 
-  const submit = () => {
-    if (!form.AutNom || !form.AutApe || !form.AutDoc) return;
+  // Manejador que limpia el error al escribir
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    if (validationError) {
+      setValidationError(null);
+    }
+  };
 
-    onSave({
-      AutNom: form.AutNom.trim(),
-      AutApe: form.AutApe.trim(),
-      AutDoc: form.AutDoc.trim(),
-      AutEma: form.AutEma.trim() || undefined,
-    });
+  // Función de validación de campos obligatorios
+  const validate = () => {
+    if (!form.AutNom.trim()) {
+      setValidationError("El nombre del autor es obligatorio.");
+      return false;
+    }
+    if (!form.AutApe.trim()) {
+      setValidationError("El apellido del autor es obligatorio.");
+      return false;
+    }
+    if (!form.AutDoc.trim()) {
+      setValidationError("El DOC del autor es obligatorio.");
+      return false;
+    }
+    setValidationError(null);
+    return true;
+  }
+
+  const submit = async () => {
+    // 1. Validar en el frontend
+    if (!validate()) { 
+      return;
+    }
+    
+    if (isSaving) return;
+
+    setIsSaving(true);
+    try {
+        await onSave({
+            AutNom: form.AutNom.trim(),
+            AutApe: form.AutApe.trim(),
+            AutDoc: form.AutDoc.trim(),
+            // Enviar undefined si el correo está vacío para que el backend lo maneje como NULL
+            AutEma: form.AutEma.trim() || undefined, 
+        });
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   return (
@@ -57,33 +102,69 @@ function AutorForm({
       <h3>{initial ? "Editar autor" : "Registrar autor"}</h3>
 
       <div className="form-grid">
-        <input
-          placeholder="Nombres"
-          value={form.AutNom}
-          onChange={(e) => setForm({ ...form, AutNom: e.target.value })}
-        />
-        <input
-          placeholder="Apellidos"
-          value={form.AutApe}
-          onChange={(e) => setForm({ ...form, AutApe: e.target.value })}
-        />
-        <input
-          placeholder="Documento"
-          value={form.AutDoc}
-          onChange={(e) => setForm({ ...form, AutDoc: e.target.value })}
-        />
-        <input
-          placeholder="Correo (opcional)"
-          value={form.AutEma}
-          onChange={(e) => setForm({ ...form, AutEma: e.target.value })}
-        />
+        <div className="form-field">
+          <label htmlFor="AutNom">Nombres</label>
+          <input
+            placeholder="Nombres (obligatorio)"
+            name="AutNom" // Nombre para el handler genérico
+            value={form.AutNom}
+            onChange={handleChange} // Usando handleChange
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="AutApe">Apellidos</label>
+          <input
+            placeholder="Apellidos (obligatorio)"
+            name="AutApe" // Nombre para el handler genérico
+            value={form.AutApe}
+            onChange={handleChange} // Usando handleChange
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+           <label htmlFor="AutDoc">DOC</label>
+          <input
+            placeholder="DOC (obligatorio)"
+            name="AutDoc" // Nombre para el handler genérico
+            value={form.AutDoc}
+            onChange={handleChange} // Usando handleChange
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+         <label htmlFor="AutEma">Correo electrónico (Opcional)</label>
+          <input
+            placeholder="Correo (opcional)"
+            name="AutEma" 
+            value={form.AutEma}
+            onChange={handleChange} 
+            disabled={isSaving}
+          />
+        </div>
       </div>
 
+      {/* ERROR DE VALIDACIÓN DEL FRONTEND */}
+      {validationError && (
+        <p
+          style={{
+            color: "#dc3545", // Rojo (Danger)
+            fontSize: "0.9em",
+            fontWeight: "bold",
+            textAlign: "center",
+            marginTop: "5px",
+            marginBottom: "5px",
+          }}
+        >
+          {validationError}
+        </p>
+      )}
+
       <div className="modal-actions">
-        <button className="btn" onClick={submit}>
-          Guardar
+        <button className="btn" onClick={submit} disabled={isSaving}>
+          {isSaving ? "Guardando..." : "Guardar"}
         </button>
-        <button className="btn secondary" onClick={onCancel}>
+        <button className="btn secondary" onClick={onCancel} disabled={isSaving}>
           Cancelar
         </button>
       </div>
@@ -104,7 +185,8 @@ export default function Autores() {
   const [items, setItems] = useState<Autor[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const [errorModal, setErrorModal] = useState<string | null>(null); // Estado para errores de CRUD
+  const [successModal, setSuccessModal] = useState<string | null>(null);
   // filtros
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"activos" | "desactivados">("activos");
@@ -118,16 +200,95 @@ export default function Autores() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  /* ===== MANEJO DE ERRORES DEL BACKEND (Personalización y Traducción) ===== */
+  const handleBackendError = async (res: Response) => {
+    if (!res.ok) {
+      let errorMessage = `Error ${res.status}: Operación fallida.`;
+      let textBody = '';
+
+      try {
+        const resClone = res.clone();
+        textBody = await resClone.text();
+        const errorData = JSON.parse(textBody);
+
+        let rawMessage = null;
+
+        // 1. Obtener el mensaje del campo 'message' principal o anidado
+        if (errorData && errorData.message) {
+            rawMessage = errorData.message;
+        } else if (errorData.error && errorData.error.message) {
+             rawMessage = errorData.error.message;
+        }
+        
+        // 2. Personalizar o traducir el mensaje si es un Array de errores de validación
+        if (Array.isArray(rawMessage)) {
+            // Función de traducción/personalización
+            const translateValidationMessage = (msg: string) => {
+                const messages: { [key: string]: string } = {
+                    'AutDoc should not be empty': 'El documento no puede estar vacío.',
+                    'AutNom should not be empty': 'El nombre no puede estar vacío.',
+                    'Unique constraint failed': 'Este número de documento ya pertenece a otro autor.',
+                    'AutApe should not be empty': 'El apellido no puede estar vacío.',
+                    'AutEma must be an email': 'El correo electrónico no tiene un formato válido.',
+                    // Asegúrate de agregar cualquier otro error de validación que encuentres
+                };
+
+                // Busca por inclusión de substring
+                for (const pattern in messages) {
+                    if (msg.includes(pattern)) {
+                        return messages[pattern];
+                    }
+                }
+                // Si no se encuentra traducción, devuelve el mensaje original
+                return msg;
+            };
+
+            // Formatear el mensaje traducido, uniéndolos con un separador claro
+            errorMessage = rawMessage.map(translateValidationMessage).join(" | ");
+
+        } else if (rawMessage) {
+            // 3. Si es un string simple (errores lanzados manualmente en el backend, ej. "El correo ya está en uso")
+            errorMessage = rawMessage;
+        } else {
+            // 4. Mensaje de respaldo
+            errorMessage = `Error ${res.status}: ${errorData.error || errorData.statusCode || 'Respuesta desconocida'}.`;
+        }
+
+      } catch (e) {
+          // 5. Si falla al parsear el JSON
+          if (textBody) {
+             errorMessage = `Error ${res.status}: ${textBody}`;
+          } else {
+             errorMessage = `Error ${res.status}: Error de conexión o servidor.`;
+          }
+      }
+      
+      setErrorModal(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
+  const closeErrorModal = () => {
+    setErrorModal(null);
+  }
+
+
   /* ===== LOAD ===== */
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       const url =
         view === "activos" ? "/api/autores" : "/api/autores/desactivados";
+      
       const res = await authFetch(url);
+      if (!res.ok) {
+        throw new Error(`No se pudo cargar: ${res.status}`);
+      }
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);
-    } catch {
+    } catch (e) {
+      console.error(e);
       setError("No se pudo cargar autores");
     } finally {
       setLoading(false);
@@ -140,9 +301,9 @@ export default function Autores() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, pageSize]);
+  }, [search, pageSize, view]);
 
-  /* ===== FILTROS ===== */
+  /* ===== FILTROS / PAGINACIÓN ===== */
   const filteredItems = useMemo(() => {
     return items.filter((a) =>
       `${a.AutNom} ${a.AutApe}`.toLowerCase().includes(search.toLowerCase()) ||
@@ -151,7 +312,6 @@ export default function Autores() {
     );
   }, [items, search]);
 
-  /* ===== PAGINACIÓN ===== */
   const totalPages = Math.ceil(filteredItems.length / pageSize);
 
   const paginatedItems = useMemo(() => {
@@ -167,33 +327,51 @@ export default function Autores() {
       ? `/api/autores/${selected!.AutId}`
       : "/api/autores";
 
-    await authFetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    try {
+        const res = await authFetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
 
-    setModal(null);
-    setSelected(null);
-    await load();
+        await handleBackendError(res); // Manejo de errores
+        setSuccessModal(isEdit ? "Autor actualizado correctamente" : "Autor registrado correctamente");
+        setModal(null);
+        setSelected(null);
+        await load();
+    } catch (e) {
+        console.error("Error en SAVE:", e);
+    }
   };
 
   const deactivate = async () => {
     if (!selected) return;
-    await authFetch(`/api/autores/${selected.AutId}`, { method: "DELETE" });
-    setModal(null);
-    setSelected(null);
-    await load();
+    try {
+        const res = await authFetch(`/api/autores/${selected.AutId}`, { method: "DELETE" });
+        await handleBackendError(res); // Manejo de errores
+        setSuccessModal("Autor desactivado con éxito");
+        setModal(null);
+        setSelected(null);
+        await load();
+    } catch (e) {
+        console.error("Error en DEACTIVATE:", e);
+    }
   };
 
   const reactivate = async () => {
     if (!selected) return;
-    await authFetch(`/api/autores/reactivar/${selected.AutId}`, {
-      method: "PATCH",
-    });
-    setModal(null);
-    setSelected(null);
-    await load();
+    try {
+        const res = await authFetch(`/api/autores/reactivar/${selected.AutId}`, {
+            method: "PATCH",
+        });
+        await handleBackendError(res); // Manejo de errores
+        setSuccessModal("Autor reactivado con éxito");
+        setModal(null);
+        setSelected(null);
+        await load();
+    } catch (e) {
+        console.error("Error en REACTIVATE:", e);
+    }
   };
 
   /* ===== UI ===== */
@@ -255,8 +433,9 @@ export default function Autores() {
             <thead>
               <tr>
                 <th>#</th>
-                <th>Nombre</th>
-                <th>Documento</th>
+                <th>Nombres</th>
+                <th>Apellidos</th>
+                <th>DOC</th>
                 <th>Correo</th>
                 <th>Activo</th>
                 <th>Acciones</th>
@@ -266,7 +445,8 @@ export default function Autores() {
               {paginatedItems.map((a, i) => (
                 <tr key={a.AutId}>
                   <td>{(page - 1) * pageSize + i + 1}</td>
-                  <td>{a.AutNom} {a.AutApe}</td>
+                  <td>{a.AutNom}</td>
+                  <td>{a.AutApe}</td>
                   <td>{a.AutDoc}</td>
                   <td>{a.AutEma || "—"}</td>
                   <td>{a.AutAct ? "Sí" : "No"}</td>
@@ -313,7 +493,7 @@ export default function Autores() {
         </button>
       </div>
 
-      {/* ===== MODALES ===== */}
+      {/* ===== MODALES DE OPERACIÓN ===== */}
       {modal && (
         <div className="modal-backdrop">
           <div className="modal">
@@ -321,7 +501,7 @@ export default function Autores() {
               <>
                 <h3>Detalle del autor</h3>
                 <p><b>Nombre:</b> {selected.AutNom} {selected.AutApe}</p>
-                <p><b>Documento:</b> {selected.AutDoc}</p>
+                <p><b>DOC:</b> {selected.AutDoc}</p>
                 <p><b>Correo:</b> {selected.AutEma || "—"}</p>
                 <p><b>Activo:</b> {selected.AutAct ? "Sí" : "No"}</p>
                 <button className="btn" onClick={() => setModal(null)}>Cerrar</button>
@@ -336,17 +516,19 @@ export default function Autores() {
               />
             )}
 
-            {modal === "delete" && (
+            {modal === "delete" && selected && (
               <>
                 <h3>¿Desactivar autor?</h3>
+                <p>El autor <b>{selected.AutNom} {selected.AutApe}</b> será marcado como inactivo.</p>
                 <button className="btn danger" onClick={deactivate}>Desactivar</button>
                 <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
               </>
             )}
 
-            {modal === "reactivate" && (
+            {modal === "reactivate" && selected && (
               <>
                 <h3>¿Reactivar autor?</h3>
+                <p>El autor <b>{selected.AutNom} {selected.AutApe}</b> volverá a estar activo en el sistema.</p>
                 <button className="btn" onClick={reactivate}>Reactivar</button>
                 <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
               </>
@@ -354,7 +536,26 @@ export default function Autores() {
           </div>
         </div>
       )}
+      {/* ===== MODAL DE ÉXITO (AGREGADO AL FINAL) ===== */}
+      {successModal && (
+        <div className="modal-backdrop">
+          <div className="modal success-modal">
+            <h3 className="success-title">✅ Operación Exitosa</h3>
+            <p>{successModal}</p>
+            <button className="btn" onClick={() => setSuccessModal(null)}>Aceptar</button>
+          </div>
+        </div>
+      )}
+      {/* ===== MODAL DE ERROR (Muestra solo el mensaje descriptivo) ===== */}
+      {errorModal && (
+        <div className="modal-backdrop">
+          <div className="modal error-modal">
+            <h3 className="error-title">❌ Error en la Operación</h3>
+            <p>{errorModal}</p>
+            <button className="btn" onClick={closeErrorModal}>Aceptar</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
-

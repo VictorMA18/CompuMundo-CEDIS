@@ -3,16 +3,16 @@ import { useOutletContext } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import type { UsuTip } from "../../types/auth";
 import type { Usuario } from "../../types/usuario";
-import "./AdminCrud.css";
+import "./AdminCrud.css"; // Asegúrate de que este archivo CSS existe
 
-/* ================= FORMULARIO ================= */
+/* ================= FORMULARIO (ACTUALIZADO CON VALIDACIÓN FRONTEND) ================= */
 function UsuarioForm({
   initial,
   onSave,
   onCancel,
 }: {
   initial: Usuario | null;
-  onSave: (data: any) => void;
+  onSave: (data: any) => Promise<void>;
   onCancel: () => void;
 }) {
   const [form, setForm] = useState({
@@ -21,31 +21,78 @@ function UsuarioForm({
     UsuTip: "consultor" as UsuTip,
     UsuCon: "",
   });
+  const [isSaving, setIsSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  // Estado para mostrar errores de validación del frontend
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!initial) return;
+    if (!initial) {
+      setForm({ UsuNom: "", UsuEma: "", UsuTip: "consultor", UsuCon: "" });
+      setValidationError(null);
+      return;
+    }
     setForm({
       UsuNom: initial.UsuNom,
       UsuEma: initial.UsuEma,
       UsuTip: initial.UsuTip,
       UsuCon: "",
     });
+    setValidationError(null);
   }, [initial]);
 
-  const submit = () => {
-    if (!form.UsuNom || !form.UsuEma) return;
+  // Manejador genérico que limpia el error al escribir y maneja inputs/selects
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value as any });
+    if (validationError) {
+      setValidationError(null);
+    }
+  };
 
+  // Función de validación de campos obligatorios
+  const validate = () => {
+    if (!form.UsuNom.trim()) {
+      setValidationError("El nombre del usuario es obligatorio.");
+      return false;
+    }
+    if (!form.UsuEma.trim()) {
+      setValidationError("El correo electrónico es obligatorio.");
+      return false;
+    }
+    // La contraseña es obligatoria solo en el modo "new"
+    if (!initial && !form.UsuCon.trim()) {
+      setValidationError("La contraseña es obligatoria para nuevos usuarios.");
+      return false;
+    }
+    setValidationError(null);
+    return true;
+  }
+
+  const submit = async () => {
+    // 1. Validar en el frontend
+    if (!validate()) {
+      return;
+    }
+
+    if (isSaving) return;
+
+    setIsSaving(true);
     const payload: any = {
       UsuNom: form.UsuNom.trim(),
       UsuEma: form.UsuEma.trim(),
       UsuTip: form.UsuTip,
     };
 
+    // La contraseña solo se envía si es nuevo o si se modificó
     if (!initial || form.UsuCon.trim()) {
       payload.UsuCon = form.UsuCon;
     }
 
-    onSave(payload);
+    try {
+        await onSave(payload);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -53,35 +100,92 @@ function UsuarioForm({
       <h3>{initial ? "Editar usuario" : "Registrar usuario"}</h3>
 
       <div className="form-grid">
-        <input
-          placeholder="Nombre"
-          value={form.UsuNom}
-          onChange={(e) => setForm({ ...form, UsuNom: e.target.value })}
-        />
-        <input
-          placeholder="Correo"
-          value={form.UsuEma}
-          onChange={(e) => setForm({ ...form, UsuEma: e.target.value })}
-        />
-        <select
-          value={form.UsuTip}
-          onChange={(e) => setForm({ ...form, UsuTip: e.target.value as UsuTip })}
-        >
-          <option value="administrador">Administrador</option>
-          <option value="bibliotecario">Bibliotecario</option>
-          <option value="consultor">Consultor</option>
-        </select>
-        <input
-          type="password"
-          placeholder={initial ? "Nueva contraseña (opcional)" : "Contraseña"}
-          value={form.UsuCon}
-          onChange={(e) => setForm({ ...form, UsuCon: e.target.value })}
-        />
+        <div className="form-field">
+          <label htmlFor="UsuNom">Nombre Completo</label>
+          {/* Campo de Nombre */}
+          <input
+            placeholder="Nombre (obligatorio)"
+            name="UsuNom" 
+            value={form.UsuNom}
+            onChange={handleChange}
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="UsuEma">Correo Electrónico</label>
+          {/* Campo de Correo */}
+          <input
+            placeholder="Correo (obligatorio)"
+            name="UsuEma" 
+            value={form.UsuEma}
+            onChange={handleChange}
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="UsuTip">Rol de Usuario</label>
+          {/* Campo de Rol */}
+          <select
+            name="UsuTip" 
+            value={form.UsuTip}
+            onChange={handleChange}
+            disabled={isSaving}
+          >
+            <option value="administrador">Administrador</option>
+            <option value="bibliotecario">Bibliotecario</option>
+            <option value="consultor">Consultor</option>
+          </select>
+        </div> 
+        <div className="form-field">
+          <label htmlFor="UsuCon">
+            {initial ? "Nueva Contraseña (opcional)" : "Contraseña"}
+          </label>
+          {/* Campo de Contraseña con el botón "ojo" */}
+          <div className="password-container"> 
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder={initial ? "Nueva contraseña (opcional)" : "Contraseña (obligatoria)"}
+              name="UsuCon" 
+              value={form.UsuCon}
+              onChange={handleChange}
+              disabled={isSaving}
+            />
+            <button 
+              type="button" 
+              className="toggle-password-btn" 
+              onClick={() => setShowPassword(p => !p)}
+              disabled={isSaving}
+            >
+              {showPassword ? "👁️" : "🔒"} 
+            </button>
+          </div>
+        </div>
       </div>
 
+      {/* ERROR DE VALIDACIÓN DEL FRONTEND */}
+      {validationError && (
+        <p
+          style={{
+            color: "#dc3545", 
+            fontSize: "0.9em",
+            fontWeight: "bold",
+            textAlign: "center",
+            marginTop: "5px",
+            marginBottom: "5px",
+          }}
+        >
+          {validationError}
+        </p>
+      )}
+
+
       <div className="modal-actions">
-        <button className="btn" onClick={submit}>Guardar</button>
-        <button className="btn secondary" onClick={onCancel}>Cancelar</button>
+        <button className="btn" onClick={submit} disabled={isSaving}>
+          {isSaving ? "Guardando..." : "Guardar"}
+        </button>
+        <button className="btn secondary" onClick={onCancel} disabled={isSaving}>
+          Cancelar
+        </button>
       </div>
     </>
   );
@@ -100,7 +204,8 @@ export default function Usuarios() {
   const [items, setItems] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const [errorModal, setErrorModal] = useState<string | null>(null); 
+  const [successModal, setSuccessModal] = useState<string | null>(null);
   // filtros
   const [search, setSearch] = useState("");
   const [rol, setRol] = useState("");
@@ -115,9 +220,82 @@ export default function Usuarios() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+
+  /* ===== MANEJO DE ERRORES DEL BACKEND (Personalización y Traducción) ===== */
+  const handleBackendError = async (res: Response) => {
+    if (!res.ok) {
+      let errorMessage = `Error ${res.status}: Operación fallida.`;
+      let textBody = '';
+
+      try {
+        const resClone = res.clone();
+        textBody = await resClone.text();
+        const errorData = JSON.parse(textBody);
+
+        let rawMessage = null;
+
+        // 1. Obtener el mensaje del campo 'message' principal o anidado
+        if (errorData && errorData.message) {
+            rawMessage = errorData.message;
+        } else if (errorData.error && errorData.error.message) {
+             rawMessage = errorData.error.message;
+        }
+        
+        // 2. Personalizar o traducir el mensaje si es un Array de errores de validación
+        if (Array.isArray(rawMessage)) {
+            // Función de traducción/personalización
+            const translateValidationMessage = (msg: string) => {
+                const messages: { [key: string]: string } = {
+                    'UsuEma must be an email': 'El correo electrónico no tiene un formato válido.',
+                    'UsuCon must be longer than or equal to 6 characters': 'La contraseña debe tener al menos 6 caracteres.',
+                    'UsuNom should not be empty': 'El nombre del usuario no puede estar vacío.',
+                    'UsuEma should not be empty': 'El correo del usuario no puede estar vacío.',
+                    'already exists': 'ya está registrado/a.', // Para mensajes como "El email ya está registrado"
+                };
+
+                // Busca por inclusión de substring
+                for (const pattern in messages) {
+                    if (msg.includes(pattern)) {
+                        return messages[pattern];
+                    }
+                }
+                // Si no se encuentra traducción, devuelve el mensaje original
+                return msg;
+            };
+
+            // Formatear el mensaje traducido, uniéndolos con un separador claro
+            errorMessage = rawMessage.map(translateValidationMessage).join(" | ");
+
+        } else if (rawMessage) {
+            // 3. Si es un string simple (ej. "El email ya está registrado")
+            errorMessage = rawMessage;
+        } else {
+            // 4. Mensaje de respaldo si el JSON es válido pero sin campos 'message' útiles
+            errorMessage = `Error ${res.status}: ${errorData.error || errorData.statusCode || 'Respuesta desconocida'}.`;
+        }
+
+      } catch (e) {
+          // 5. Si falla al parsear el JSON (cuerpo vacío o no JSON)
+          if (textBody) {
+             errorMessage = `Error ${res.status}: ${textBody}`;
+          } else {
+             errorMessage = `Error ${res.status}: Error de conexión o servidor.`;
+          }
+      }
+      
+      setErrorModal(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
+  const closeErrorModal = () => {
+    setErrorModal(null);
+  }
+
   /* ===== LOAD ===== */
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       const url =
         view === "activos"
@@ -125,9 +303,13 @@ export default function Usuarios() {
           : "/api/usuarios/desactivados";
 
       const res = await authFetch(url);
+      if (!res.ok) {
+        throw new Error(`No se pudo cargar: ${res.status}`);
+      }
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);
-    } catch {
+    } catch (e) {
+      console.error(e);
       setError("No se pudo cargar usuarios");
     } finally {
       setLoading(false);
@@ -143,7 +325,7 @@ export default function Usuarios() {
     setPage(1);
   }, [search, rol, pageSize]);
 
-  /* ===== FILTROS ===== */
+  /* ===== FILTROS / PAGINACIÓN ===== */
   const filteredItems = useMemo(() => {
     return items.filter((u) => {
       const matchText =
@@ -156,7 +338,6 @@ export default function Usuarios() {
     });
   }, [items, search, rol]);
 
-  /* ===== PAGINACIÓN ===== */
   const totalPages = Math.ceil(filteredItems.length / pageSize);
 
   const paginatedItems = useMemo(() => {
@@ -173,33 +354,53 @@ export default function Usuarios() {
       ? `/api/usuarios/${selected!.UsuId}`
       : "/api/usuarios";
 
-    await authFetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const res = await authFetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    setModal(null);
-    setSelected(null);
-    await load();
+      await handleBackendError(res);
+      setSuccessModal(isEdit ? "Usuario actualizado correctamente" : "Usuario registrado correctamente");
+      setModal(null);
+      setSelected(null);
+      await load();
+    } catch (e) {
+      console.error("Error en SAVE:", e);
+    }
   };
 
   const deactivate = async () => {
     if (!selected) return;
-    await authFetch(`/api/usuarios/${selected.UsuId}`, { method: "DELETE" });
-    setModal(null);
-    setSelected(null);
-    await load();
+    try {
+      const res = await authFetch(`/api/usuarios/${selected.UsuId}`, { method: "DELETE" });
+
+      await handleBackendError(res);
+      setSuccessModal("Usuario desactivado con éxito");
+      setModal(null);
+      setSelected(null);
+      await load();
+    } catch (e) {
+      console.error("Error en DEACTIVATE:", e);
+    }
   };
 
   const reactivate = async () => {
     if (!selected) return;
-    await authFetch(`/api/usuarios/reactivar/${selected.UsuId}`, {
-      method: "PATCH",
-    });
-    setModal(null);
-    setSelected(null);
-    await load();
+    try {
+      const res = await authFetch(`/api/usuarios/reactivar/${selected.UsuId}`, {
+        method: "PATCH",
+      });
+
+      await handleBackendError(res);
+      setSuccessModal("Usuario reactivado con éxito");
+      setModal(null);
+      setSelected(null);
+      await load();
+    } catch (e) {
+      console.error("Error en REACTIVATE:", e);
+    }
   };
 
   /* ===== UI ===== */
@@ -330,7 +531,7 @@ export default function Usuarios() {
         </button>
       </div>
 
-      {/* ===== MODALES ===== */}
+      {/* ===== MODALES DE OPERACIÓN ===== */}
       {modal && (
         <div className="modal-backdrop">
           <div className="modal">
@@ -353,26 +554,49 @@ export default function Usuarios() {
               />
             )}
 
-            {modal === "delete" && (
+            {modal === "delete" && selected && (
               <>
                 <h3>¿Desactivar usuario?</h3>
                 <p>El usuario no podrá acceder al sistema</p>
-                <button className="btn danger" onClick={deactivate}>Desactivar</button>
-                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                <div className="modal-actions">
+                  <button className="btn danger" onClick={deactivate}>Desactivar</button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                </div>
               </>
             )}
 
-            {modal === "reactivate" && (
+            {modal === "reactivate" && selected && ( 
               <>
                 <h3>¿Reactivar usuario?</h3>
-                <button className="btn" onClick={reactivate}>Reactivar</button>
-                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                <p>El usuario podrá volver acceder al sistema</p>
+                <div className="modal-actions">
+                  <button className="btn" onClick={reactivate}>Reactivar</button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                </div>
               </>
             )}
+                      </div>
+        </div>
+      )}
+      {successModal && (
+        <div className="modal-backdrop">
+          <div className="modal success-modal">
+            <h3 className="success-title">✅ Operación Exitosa</h3>
+            <p>{successModal}</p>
+            <button className="btn" onClick={() => setSuccessModal(null)}>Aceptar</button>
+          </div>
+        </div>
+      )}
+      {/* ===== MODAL DE ERROR (Backend) ===== */}
+      {errorModal && (
+        <div className="modal-backdrop">
+          <div className="modal error-modal">
+            <h3 className="error-title">❌ Error en la Operación</h3>
+            <p>{errorModal}</p>
+            <button className="btn" onClick={closeErrorModal}>Aceptar</button>
           </div>
         </div>
       )}
     </>
   );
 }
-

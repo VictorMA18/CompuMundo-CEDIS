@@ -1,99 +1,170 @@
-import { useEffect, useMemo, useState } from "react";
-import { useOutletContext } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import "./AdminCrud.css";
+import { useEffect, useMemo, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import './AdminCrud.css';
 
 /* ================= TIPOS ================= */
-type ApiError = { message?: string | string[] };
-
 type MaterialVirtual = {
   MatVirId: number;
   MatBibId: number;
   MatVirUrlAcc: string;
   MatVirForArc: string;
   MatVirAct: boolean;
-  MatVirFecCre?: string;
-  MatVirFecAct?: string;
+  materialBibliografico?: { MatBibTit: string; MatBibCod: string };
 };
 
-type FormState = {
-  MatBibId: string;
-  MatVirUrlAcc: string;
-  MatVirForArc: string;
+type MaterialBibRef = { MatBibId: number; MatBibTit: string; MatBibCod: string };
+
+type View = 'activos' | 'desactivados';
+type ModalState = null | 'view' | 'new' | 'edit' | 'delete' | 'reactivate';
+
+/* ================= HOOKS DE DATOS RELACIONADOS ================= */
+const useBibliograficos = (authFetch: any) => {
+  const [data, setData] = useState<MaterialBibRef[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDocs = async () => {
+      try {
+        const res = await authFetch('/api/material-bibliografico');
+        if (res.ok) {
+          const json = await res.json();
+          setData(json || []);
+        }
+      } catch (e) {
+        console.error("Error al cargar bibliográficos:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void fetchDocs();
+  }, [authFetch]);
+  return { bibliograficos: data, loading };
 };
 
-type View = "activos" | "desactivados";
-
-/* ================= FUNCIONES AUX ================= */
-function errorMessage(data: unknown, fallback: string) {
-  const err = data as ApiError;
-  if (Array.isArray(err?.message)) return err.message.join(", ");
-  if (typeof err?.message === "string" && err.message.trim()) return err.message;
-  return fallback;
-}
-
-/* ================= FORMULARIO MODAL ================= */
+/* ================= COMPONENTE DE FORMULARIO ================= */
 function MaterialVirtualForm({
   initial,
   onSave,
   onCancel,
+  bibliograficos,
 }: {
   initial: MaterialVirtual | null;
-  onSave: (data: FormState) => void;
+  onSave: (data: any) => Promise<void>;
   onCancel: () => void;
+  bibliograficos: MaterialBibRef[];
 }) {
-  const [form, setForm] = useState<FormState>({
-    MatBibId: "",
-    MatVirUrlAcc: "",
-    MatVirForArc: "",
+  const [form, setForm] = useState({
+    MatBibId: 0,
+    MatVirUrlAcc: '',
+    MatVirForArc: '',
   });
 
+  const [isSaving, setIsSaving] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (!initial) {
-      setForm({ MatBibId: "", MatVirUrlAcc: "", MatVirForArc: "" });
-      return;
+    if (initial) {
+      setForm({
+        MatBibId: initial.MatBibId,
+        MatVirUrlAcc: initial.MatVirUrlAcc || "",
+        MatVirForArc: initial.MatVirForArc || "",
+      });
     }
-    setForm({
-      MatBibId: String(initial.MatBibId),
-      MatVirUrlAcc: initial.MatVirUrlAcc,
-      MatVirForArc: initial.MatVirForArc,
-    });
+    setValidationError(null);
   }, [initial]);
 
-  const submit = () => {
-    if (!form.MatBibId || !form.MatVirUrlAcc || !form.MatVirForArc) return;
-    onSave({
-      MatBibId: form.MatBibId.trim(),
-      MatVirUrlAcc: form.MatVirUrlAcc.trim(),
-      MatVirForArc: form.MatVirForArc.trim(),
-    });
+  const handleInputChange = (field: string, value: any) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    if (validationError) setValidationError(null);
+  };
+
+  const validate = () => {
+    if (!form.MatBibId || form.MatBibId === 0) {
+      setValidationError("Debe seleccionar un material bibliográfico.");
+      return false;
+    }
+    if (!form.MatVirUrlAcc.trim()) {
+      setValidationError("La URL de acceso es obligatoria.");
+      return false;
+    }
+    if (!form.MatVirForArc.trim()) {
+      setValidationError("El formato de archivo es obligatorio.");
+      return false;
+    }
+    return true;
+  };
+
+  const submit = async () => {
+    if (!validate()) return;
+    if (isSaving) return;
+
+    setIsSaving(true);
+    try {
+      await onSave({
+        ...form,
+        MatVirUrlAcc: form.MatVirUrlAcc.trim(),
+        MatVirForArc: form.MatVirForArc.trim(),
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <>
       <h3>{initial ? "Editar Material Virtual" : "Registrar Material Virtual"}</h3>
+
       <div className="form-grid">
-        <input
-          placeholder="MatBibId"
-          value={form.MatBibId}
-          onChange={(e) => setForm({ ...form, MatBibId: e.target.value })}
-        />
-        <input
-          placeholder="URL de acceso"
-          value={form.MatVirUrlAcc}
-          onChange={(e) => setForm({ ...form, MatVirUrlAcc: e.target.value })}
-        />
-        <input
-          placeholder="Formato de archivo"
-          value={form.MatVirForArc}
-          onChange={(e) => setForm({ ...form, MatVirForArc: e.target.value })}
-        />
+        <div className="form-field">
+          <label htmlFor="MatBibId">Documento Bibliográfico</label>
+          <select
+            className="input"
+            value={form.MatBibId}
+            onChange={(e) => handleInputChange("MatBibId", Number(e.target.value))}
+            disabled={isSaving}
+          >
+            <option value={0}>Seleccione Documento Padre...</option>
+            {bibliograficos.map(b => (
+              <option key={b.MatBibId} value={b.MatBibId}>
+                {b.MatBibTit} ({b.MatBibCod})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-field">
+          <label htmlFor="MatVirUrlAcc">URL de Acceso</label>
+          <input
+            className="input"
+            placeholder="URL de Acceso (http://...)"
+            value={form.MatVirUrlAcc}
+            onChange={(e) => handleInputChange("MatVirUrlAcc", e.target.value)}
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="MatVirForArc">Formato del Archivo</label>
+          <input
+            className="input"
+            placeholder="Formato (PDF, EPUB, etc.)"
+            value={form.MatVirForArc}
+            onChange={(e) => handleInputChange("MatVirForArc", e.target.value)}
+            disabled={isSaving}
+          />
+        </div>
       </div>
+
+      {validationError && (
+        <p style={{ color: "#dc3545", fontSize: "0.9em", fontWeight: "bold", textAlign: "center", margin: "10px 0" }}>
+          {validationError}
+        </p>
+      )}
+
       <div className="modal-actions">
-        <button className="btn" onClick={submit}>
-          Guardar
+        <button className="btn" onClick={submit} disabled={isSaving}>
+          {isSaving ? "Guardando..." : "Guardar"}
         </button>
-        <button className="btn secondary" onClick={onCancel}>
+        <button className="btn secondary" onClick={onCancel} disabled={isSaving}>
           Cancelar
         </button>
       </div>
@@ -102,157 +173,112 @@ function MaterialVirtualForm({
 }
 
 /* ================= COMPONENTE PRINCIPAL ================= */
-export default function MaterialVirtualPage() {
+export default function MaterialVirtual() {
   const setTitle = useOutletContext<((title: string) => void) | undefined>();
   const { authFetch } = useAuth();
+  const { bibliograficos, loading: loadingBib } = useBibliograficos(authFetch);
 
-  /* ===== ESTADOS ===== */
+  useEffect(() => { setTitle?.("Material Virtual"); }, [setTitle]);
+
   const [items, setItems] = useState<MaterialVirtual[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [searchMatBibId, setSearchMatBibId] = useState("");
+  const [search, setSearch] = useState("");
   const [view, setView] = useState<View>("activos");
-
-  const [modal, setModal] = useState<null | "view" | "new" | "edit" | "delete" | "reactivate">(null);
+  const [modal, setModal] = useState<ModalState>(null);
   const [selected, setSelected] = useState<MaterialVirtual | null>(null);
-
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [errorModal, setErrorModal] = useState<string | null>(null);
+  const [successModal, setSuccessModal] = useState<string | null>(null);
 
-  /* ===== LOAD ===== */
+  const handleBackendError = async (res: Response) => {
+    if (!res.ok) {
+      let errorMessage = `Error ${res.status}: Operación fallida.`;
+      try {
+        const resClone = res.clone();
+        const errorData = await resClone.json();
+        let rawMessage = errorData.message || errorData.error?.message;
+        if (Array.isArray(rawMessage)) errorMessage = rawMessage.join(" | ");
+        else if (rawMessage) errorMessage = rawMessage;
+      } catch {
+        errorMessage = `Error ${res.status}: Error de servidor.`;
+      }
+      setErrorModal(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
   const load = async () => {
     setLoading(true);
-    setError(null);
-    let url = view === "activos" ? "/api/material-virtual" : "/api/material-virtual/desactivados";
-    if (searchMatBibId.trim()) url = `/api/material-virtual/material/${encodeURIComponent(searchMatBibId.trim())}`;
-
+    setLoadError(null);
     try {
+      const url = view === "activos" ? "/api/material-virtual" : "/api/material-virtual/desactivados";
       const res = await authFetch(url);
+      if (!res.ok) throw new Error();
       const data = await res.json();
-      setItems(Array.isArray(data) ? data : []);
+      setItems(data || []);
     } catch {
-      setError("No se pudo cargar material virtual");
+      setItems([]);
+      setLoadError("No se pudieron cargar los materiales virtuales.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    setTitle?.("Material Virtual");
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
+  useEffect(() => { void load(); }, [view]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [searchMatBibId, pageSize]);
-
-  /* ===== FILTROS ===== */
   const filteredItems = useMemo(() => {
-    return items.filter((m) => String(m.MatBibId).includes(searchMatBibId));
-  }, [items, searchMatBibId]);
+    return items.filter(m =>
+      m.MatVirForArc.toLowerCase().includes(search.toLowerCase()) ||
+      m.materialBibliografico?.MatBibTit.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [items, search]);
 
-  /* ===== PAGINACIÓN ===== */
   const totalPages = Math.ceil(filteredItems.length / pageSize);
   const paginatedItems = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredItems.slice(start, start + pageSize);
   }, [filteredItems, page, pageSize]);
 
-  /* ===== CRUD ===== */
-  const save = async (payload: FormState) => {
+  const save = async (payload: any) => {
     const isEdit = modal === "edit" && selected;
-    const url = isEdit ? `/api/material-virtual/${selected!.MatVirId}` : "/api/material-virtual";
-    const method = isEdit ? "PATCH" : "POST";
-
+    const url = isEdit ? `/api/material-virtual/${selected.MatVirId}` : "/api/material-virtual";
     try {
       const res = await authFetch(url, {
-        method,
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, MatBibId: Number(payload.MatBibId) }),
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        setError(errorMessage(data, "Error al guardar material virtual"));
-      }
-    } catch {
-      setError("Error al guardar material virtual");
-    } finally {
-      setModal(null);
-      setSelected(null);
+      await handleBackendError(res);
+      setSuccessModal(isEdit ? "Registro actualizado correctamente" : "Registro creado correctamente");
+      setModal(null); 
       await load();
-    }
+    } catch (e) { console.error(e); }
   };
 
-  const deactivate = async () => {
-    if (!selected) return;
-    try {
-      const res = await authFetch(`/api/material-virtual/${selected.MatVirId}`, { method: "DELETE" });
-      if (!res.ok) {
-        const data = await res.json();
-        setError(errorMessage(data, "No se pudo desactivar"));
-      }
-    } catch {
-      setError("No se pudo desactivar");
-    } finally {
-      setModal(null);
-      await load();
-    }
-  };
-
-  const reactivate = async () => {
-    if (!selected) return;
-    try {
-      const res = await authFetch(`/api/material-virtual/reactivar/${selected.MatVirId}`, { method: "PATCH" });
-      if (!res.ok) {
-        const data = await res.json();
-        setError(errorMessage(data, "No se pudo reactivar"));
-      }
-    } catch {
-      setError("No se pudo reactivar");
-    } finally {
-      setModal(null);
-      await load();
-    }
-  };
-
-  /* ===== UI ===== */
   return (
     <>
-      {error && <div className="error">{error}</div>}
-
-      {/* ===== FILTROS ===== */}
+      {loadError && <div className="error">{loadError}</div>}
+      
       <div className="filters-card">
         <h3 className="card-title">Filtros</h3>
-
-        <input
-          className="input"
-          placeholder="Buscar por MatBibId"
-          value={searchMatBibId}
-          onChange={(e) => setSearchMatBibId(e.target.value)}
-        />
-
+        <input className="input" placeholder="Buscar por título o formato..." value={search} onChange={(e) => setSearch(e.target.value)} />
         <select className="input" value={view} onChange={(e) => setView(e.target.value as View)}>
           <option value="activos">Activos</option>
           <option value="desactivados">Desactivados</option>
         </select>
-
-        <button className="btn-new" onClick={() => { setSelected(null); setModal("new"); }}>
+        <button className="btn-new" onClick={() => { setSelected(null); setModal("new"); }} disabled={loadingBib}>
           ➕ Nuevo
         </button>
       </div>
 
-      {/* ===== TABLA ===== */}
       <div className="table-card">
         <h3 className="card-title">Listado de Material Virtual</h3>
         <div className="table-toolbar">
           <span>Mostrar</span>
-          <select
-            className="input-small"
-            value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
-          >
+          <select className="input-small" value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}>
             <option value={5}>5</option>
             <option value={10}>10</option>
             <option value={20}>20</option>
@@ -263,24 +289,29 @@ export default function MaterialVirtualPage() {
           <table>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>MatBibId</th>
-                <th>URL</th>
+                <th>#</th>
+                <th>Documento</th> {/* Cambio de ID a Título */}
+                <th>URL de Acceso</th>
                 <th>Formato</th>
-                <th>Activo</th>
+                <th>Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedItems.map((m) => (
+              {paginatedItems.map((m, index) => (
                 <tr key={m.MatVirId}>
-                  <td>{m.MatVirId}</td>
-                  <td>{m.MatBibId}</td>
-                  <td className="text-ellipsis">{m.MatVirUrlAcc}</td>
+                  <td>{(page - 1) * pageSize + index + 1}</td>
+                  <td>{m.materialBibliografico?.MatBibTit || m.MatBibId}</td>
+                  <td className="text-ellipsis" title={m.MatVirUrlAcc}>{m.MatVirUrlAcc}</td>
                   <td>{m.MatVirForArc}</td>
-                  <td>{m.MatVirAct ? "Sí" : "No"}</td>
+                  <td>
+                    <span className={`status-badge ${m.MatVirAct ? 'disponible' : 'dañado'}`}>
+                      {m.MatVirAct ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
                   <td className="actions">
                     <button onClick={() => { setSelected(m); setModal("view"); }}>👁️</button>
+                    {/* Botón editar siempre disponible */}
                     <button onClick={() => { setSelected(m); setModal("edit"); }}>✏️</button>
                     {view === "activos" ? (
                       <button onClick={() => { setSelected(m); setModal("delete"); }}>🗑️</button>
@@ -290,79 +321,98 @@ export default function MaterialVirtualPage() {
                   </td>
                 </tr>
               ))}
-              {!loading && paginatedItems.length === 0 && (
-                <tr>
-                  <td colSpan={6}>Sin registros</td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* ===== PAGINACIÓN ===== */}
       <div className="pagination">
-        <button
-          className="btn-secondary"
-          disabled={page === 1}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          ⬅ Anterior
-        </button>
-
+        <button className="btn-secondary" disabled={page === 1} onClick={() => setPage(p => p - 1)}>⬅ Anterior</button>
         <span>Página {page} de {totalPages || 1}</span>
-
-        <button
-          className="btn-secondary"
-          disabled={page === totalPages || totalPages === 0}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Siguiente ➡
-        </button>
+        <button className="btn-secondary" disabled={page === totalPages || totalPages === 0} onClick={() => setPage(p => p + 1)}>Siguiente ➡</button>
       </div>
-      {/* ===== MODALES ===== */}
+
       {modal && (
         <div className="modal-backdrop">
           <div className="modal">
             {modal === "view" && selected && (
               <>
-                <h3>Detalle Material Virtual</h3>
-                <p><b>MatVirId:</b> {selected.MatVirId}</p>
-                <p><b>MatBibId:</b> {selected.MatBibId}</p>
-                <p><b>URL:</b> {selected.MatVirUrlAcc}</p>
+                <h3>Detalle de Material</h3>
+                <p><b>Documento:</b> {selected.materialBibliografico?.MatBibTit || "N/A"}</p>
+                <p><b>URL Acceso:</b> {selected.MatVirUrlAcc}</p>
                 <p><b>Formato:</b> {selected.MatVirForArc}</p>
-                <p><b>Activo:</b> {selected.MatVirAct ? "Sí" : "No"}</p>
+                <p><b>Estado:</b> {selected.MatVirAct ? "Activo" : "Desactivado"}</p>
                 <button className="btn" onClick={() => setModal(null)}>Cerrar</button>
               </>
             )}
 
             {(modal === "new" || modal === "edit") && (
               <MaterialVirtualForm
-                initial={modal === "edit" ? selected : null}
+                initial={selected}
                 onSave={save}
                 onCancel={() => setModal(null)}
+                bibliograficos={bibliograficos}
               />
             )}
 
-            {modal === "delete" && (
+            {modal === "delete" && selected && (
               <>
-                <h3>¿Desactivar material virtual?</h3>
-                <button className="btn danger" onClick={deactivate}>Desactivar</button>
-                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                <h3>¿Desactivar material?</h3>
+                <p>Confirme si desea desactivar: <b>{selected.materialBibliografico?.MatBibTit}</b></p>
+                <div className="modal-actions">
+                  <button className="btn danger" onClick={async () => {
+                    try {
+                      const res = await authFetch(`/api/material-virtual/${selected.MatVirId}`, { method: "DELETE" });
+                      await handleBackendError(res);
+                      setSuccessModal("Material desactivado con éxito");
+                      setModal(null); load();
+                    } catch (e) {}
+                  }}>Desactivar</button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                </div>
               </>
             )}
 
-            {modal === "reactivate" && (
+            {modal === "reactivate" && selected && (
               <>
-                <h3>¿Reactivar material virtual?</h3>
-                <button className="btn" onClick={reactivate}>Reactivar</button>
-                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                <h3>¿Reactivar material?</h3>
+                <p>Confirme si desea reactivar: <b>{selected.materialBibliografico?.MatBibTit}</b></p>
+                <div className="modal-actions">
+                  <button className="btn" onClick={async () => {
+                    try {
+                      const res = await authFetch(`/api/material-virtual/reactivar/${selected.MatVirId}`, { method: "PATCH" });
+                      await handleBackendError(res);
+                      setSuccessModal("Material reactivado con éxito");
+                      setModal(null); load();
+                    } catch (e) {}
+                  }}>Reactivar</button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {successModal && (
+        <div className="modal-backdrop">
+          <div className="modal success-modal">
+            <h3 className="success-title">✅ Operación Exitosa</h3>
+            <p>{successModal}</p>
+            <button className="btn" onClick={() => setSuccessModal(null)}>Aceptar</button>
+          </div>
+        </div>
+      )}
+
+      {errorModal && (
+        <div className="modal-backdrop">
+          <div className="modal error-modal">
+            <h3 className="error-title">❌ Error en la Operación</h3>
+            <p>{errorModal}</p>
+            <button className="btn" onClick={() => setErrorModal(null)}>Aceptar</button>
           </div>
         </div>
       )}
     </>
   );
 }
-

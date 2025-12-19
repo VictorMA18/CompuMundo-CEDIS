@@ -12,6 +12,13 @@ const materialVirtualSelect = {
   MatVirUrlAcc: true,
   MatVirForArc: true,
   MatVirAct: true,
+  materialBibliografico: {
+    select: {
+      MatBibId: true,
+      MatBibTit: true, 
+      MatBibCod: true
+    }
+  }
 };
 
 @Injectable()
@@ -43,9 +50,9 @@ export class MaterialVirtualService {
       });
       if (existente) {
         if (existente.MatVirAct) {
-          throw new BadRequestException('Ya existe un material virtual para este material bibliográfico');
+          throw new BadRequestException('Ya existe un material virtual para este documento bibliográfico');
         } else {
-          throw new BadRequestException('Ya existe un material virtual para este material bibliográfico pero está desactivado. Debe reactivarse.');
+          throw new BadRequestException('Ya existe un material virtual para este documento bibliográfico pero está desactivado. Debe reactivarse.');
         }
       }
 
@@ -132,7 +139,7 @@ export class MaterialVirtualService {
           where: { MatBibId: updateMaterialVirtualDto.MatBibId },
         });
         if (existente) {
-          throw new BadRequestException('Ya existe un material virtual para ese material bibliográfico');
+          throw new BadRequestException('Ya existe un material virtual para ese documento bibliográfico');
         }
       }
 

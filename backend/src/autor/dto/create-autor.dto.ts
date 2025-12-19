@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, MaxLength, IsEmail } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateAutorDto {
@@ -20,6 +20,7 @@ export class CreateAutorDto {
   @ApiPropertyOptional({ example: 'maria.garcia@unsa.edu.pe', description: 'Correo electrónico del autor', maxLength: 100 })
   @IsOptional()
   @IsString()
+  @IsEmail()
   @MaxLength(100)
   readonly AutEma?: string;
 

@@ -4,36 +4,71 @@ import { useAuth } from "../../context/AuthContext";
 import type { Categoria } from "../../types/categoria";
 import "./AdminCrud.css";
 
-/* ================= FORMULARIO ================= */
+/* ================= FORMULARIO (ACTUALIZADO CON ESTILO INLINE) ================= */
 function CategoriaForm({
   initial,
   onSave,
   onCancel,
 }: {
   initial: Categoria | null;
-  onSave: (data: any) => void;
+  onSave: (data: any) => Promise<void>;
   onCancel: () => void;
 }) {
   const [form, setForm] = useState({
     CatNom: "",
     CatDes: "",
   });
+  const [isSaving, setIsSaving] = useState(false);
+  // Estado único para mostrar errores en la parte inferior del modal
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!initial) return;
+    if (!initial) {
+      setForm({ CatNom: "", CatDes: "" });
+      setValidationError(null); // Limpiar error al cambiar a nuevo
+      return;
+    }
     setForm({
       CatNom: initial.CatNom ?? "",
       CatDes: initial.CatDes ?? "",
     });
+    setValidationError(null); // Limpiar error al cambiar a edición
   }, [initial]);
 
-  const submit = () => {
-    if (!form.CatNom.trim()) return;
+  // Manejador genérico que limpia el error al escribir
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    if (validationError) {
+      setValidationError(null); // Limpiar el error cuando el usuario interactúa
+    }
+  };
 
-    onSave({
-      CatNom: form.CatNom.trim(),
-      CatDes: form.CatDes.trim() || undefined,
-    });
+  const validate = () => {
+    if (!form.CatNom.trim()) {
+      setValidationError("El nombre de la categoría es obligatorio.");
+      return false;
+    }
+    setValidationError(null);
+    return true;
+  }
+
+  const submit = async () => {
+    // 1. Validar en el frontend
+    if (!validate()) {
+      return;
+    }
+
+    if (isSaving) return;
+
+    setIsSaving(true);
+    try {
+      await onSave({
+        CatNom: form.CatNom.trim(),
+        CatDes: form.CatDes.trim() || undefined,
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -41,23 +76,50 @@ function CategoriaForm({
       <h3>{initial ? "Editar categoría" : "Registrar categoría"}</h3>
 
       <div className="form-grid">
-        <input
-          placeholder="Nombre de la categoría"
-          value={form.CatNom}
-          onChange={(e) => setForm({ ...form, CatNom: e.target.value })}
-        />
-        <input
-          placeholder="Descripción (opcional)"
-          value={form.CatDes}
-          onChange={(e) => setForm({ ...form, CatDes: e.target.value })}
-        />
+        <div className="form-field">
+          <label htmlFor="CatNom">Nombre de la Categoría</label>
+          {/* Campo de Nombre (obligatorio) */}
+          <input
+            placeholder="Nombre de la categoría (Obligatorio)"
+            name="CatNom"
+            value={form.CatNom}
+            onChange={handleChange}
+            disabled={isSaving}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="CatDes">Descripción (Opcional)</label>
+          {/* Campo de Descripción */}
+          <input
+            placeholder="Descripción (opcional)"
+            name="CatDes"
+            value={form.CatDes}
+            onChange={handleChange}
+            disabled={isSaving}
+          />
+        </div>
       </div>
+      {validationError && (
+        <p
+          style={{
+            color: "#dc3545", 
+            fontSize: "0.9em",
+            fontWeight: "bold",
+            textAlign: "center", 
+            marginTop: "5px", 
+            marginBottom: "5px", 
+          }}
+        >
+          {validationError}
+        </p>
+      )}
+
 
       <div className="modal-actions">
-        <button className="btn" onClick={submit}>
-          Guardar
+        <button className="btn" onClick={submit} disabled={isSaving}>
+          {isSaving ? "Guardando..." : "Guardar"}
         </button>
-        <button className="btn secondary" onClick={onCancel}>
+        <button className="btn secondary" onClick={onCancel} disabled={isSaving}>
           Cancelar
         </button>
       </div>
@@ -78,6 +140,7 @@ export default function Categorias() {
   const [items, setItems] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successModal, setSuccessModal] = useState<string | null>(null);
 
   // filtros
   const [search, setSearch] = useState("");
@@ -87,14 +150,16 @@ export default function Categorias() {
   const [modal, setModal] =
     useState<null | "view" | "new" | "edit" | "delete" | "reactivate">(null);
   const [selected, setSelected] = useState<Categoria | null>(null);
+  const [errorModal, setErrorModal] = useState<string | null>(null);
 
   // paginación
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  /* ===== LOAD ===== */
+  /* ===== LOAD (Cargar datos) ===== */
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       const url =
         view === "activos"
@@ -102,9 +167,13 @@ export default function Categorias() {
           : "/api/categorias/desactivadas";
 
       const res = await authFetch(url);
+      if (!res.ok) {
+        throw new Error(`No se pudo cargar: ${res.status}`);
+      }
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);
-    } catch {
+    } catch (e) {
+      console.error(e);
       setError("No se pudo cargar categorías");
     } finally {
       setLoading(false);
@@ -120,20 +189,61 @@ export default function Categorias() {
     setPage(1);
   }, [search, pageSize]);
 
-  /* ===== FILTROS ===== */
+  /* ===== FILTROS / PAGINACIÓN ===== */
   const filteredItems = useMemo(() => {
     return items.filter((c) =>
       c.CatNom.toLowerCase().includes(search.toLowerCase())
     );
   }, [items, search]);
 
-  /* ===== PAGINACIÓN ===== */
   const totalPages = Math.ceil(filteredItems.length / pageSize);
 
   const paginatedItems = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredItems.slice(start, start + pageSize);
   }, [filteredItems, page, pageSize]);
+
+  /* ===== MANEJO DE ERRORES DEL BACKEND (Mantiene el modal de error general para fallos de servidor o duplicidad) ===== */
+  const handleBackendError = async (res: Response) => {
+    if (!res.ok) {
+      let errorMessage = `Error ${res.status}: Operación fallida.`;
+      let textBody = '';
+
+      try {
+        const resClone = res.clone();
+        textBody = await resClone.text();
+        const errorData = JSON.parse(textBody);
+
+        let rawMessage = null;
+
+        if (errorData && errorData.message) {
+            rawMessage = errorData.message;
+        }
+
+        if (!rawMessage && errorData.error && errorData.error.message) {
+             rawMessage = errorData.error.message;
+        }
+
+        if (rawMessage) {
+            errorMessage = Array.isArray(rawMessage)
+                ? rawMessage.join(", ")
+                : rawMessage;
+        } else {
+            errorMessage = `Error ${res.status}: ${errorData.error || errorData.statusCode || 'Respuesta desconocida'}.`;
+        }
+
+      } catch (e) {
+          if (textBody) {
+             errorMessage = `Error ${res.status}: ${textBody}`;
+          } else {
+             errorMessage = `Error ${res.status}: Error de conexión o servidor.`;
+          }
+      }
+
+      setErrorModal(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
 
   /* ===== CRUD ===== */
   const save = async (payload: any) => {
@@ -144,41 +254,66 @@ export default function Categorias() {
       ? `/api/categorias/${selected!.CatId}`
       : "/api/categorias";
 
-    await authFetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const res = await authFetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        
+        body: JSON.stringify(payload),
+      });
 
-    setModal(null);
-    setSelected(null);
-    await load();
+      await handleBackendError(res);
+      setSuccessModal(isEdit ? "Categoría actualizada correctamente" : "Categoría registrada correctamente");
+      setModal(null);
+      setSelected(null);
+      await load();
+    } catch (e) {
+      console.error("Error en la operación SAVE:", e);
+    }
   };
 
   const deactivate = async () => {
     if (!selected) return;
-    await authFetch(`/api/categorias/${selected.CatId}`, { method: "DELETE" });
-    setModal(null);
-    setSelected(null);
-    await load();
+    try {
+      const res = await authFetch(`/api/categorias/${selected.CatId}`, { method: "DELETE" });
+
+      await handleBackendError(res);
+      setSuccessModal("Categoría desactivada con éxito");
+      setModal(null);
+      setSelected(null);
+      await load();
+    } catch (e) {
+      console.error("Error en la operación DEACTIVATE:", e);
+    }
   };
 
   const reactivate = async () => {
     if (!selected) return;
-    await authFetch(`/api/categorias/reactivar/${selected.CatId}`, {
-      method: "PATCH",
-    });
-    setModal(null);
-    setSelected(null);
-    await load();
+    try {
+      const res = await authFetch(`/api/categorias/reactivar/${selected.CatId}`, {
+        method: "PATCH",
+      });
+
+      await handleBackendError(res);
+      setSuccessModal("Categoría reactivada con éxito");
+      setModal(null);
+      setSelected(null);
+      await load();
+    } catch (e) {
+      console.error("Error en la operación REACTIVATE:", e);
+    }
   };
 
-  /* ===== UI ===== */
+  const closeErrorModal = () => {
+    setErrorModal(null);
+  }
+
+  /* ===== UI (Misma que antes) ===== */
   return (
     <>
       {error && <div className="error">{error}</div>}
 
-      {/* ===== FILTROS ===== */}
+      {/* ... (Filtros y Tabla) ... */}
       <div className="filters-card">
         <h3 className="card-title">Filtros</h3>
 
@@ -209,7 +344,6 @@ export default function Categorias() {
         </button>
       </div>
 
-      {/* ===== TABLA ===== */}
       <div className="table-card">
         <h3 className="card-title">Listado de Categorías</h3>
 
@@ -267,7 +401,6 @@ export default function Categorias() {
         </div>
       </div>
 
-      {/* ===== PAGINACIÓN ===== */}
       <div className="pagination">
         <button
           className="btn-secondary"
@@ -289,8 +422,9 @@ export default function Categorias() {
           Siguiente ➡
         </button>
       </div>
+      {/* ... (Fin de Filtros y Tabla) ... */}
 
-      {/* ===== MODALES ===== */}
+      {/* ===== MODALES DE OPERACIÓN ===== */}
       {modal && (
         <div className="modal-backdrop">
           <div className="modal">
@@ -312,26 +446,50 @@ export default function Categorias() {
               />
             )}
 
-            {modal === "delete" && (
+            {modal === "delete" && selected && (
               <>
                 <h3>¿Desactivar categoría?</h3>
                 <p>No estará disponible para selección</p>
-                <button className="btn danger" onClick={deactivate}>Desactivar</button>
-                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                <div className="modal-actions">
+                  <button className="btn danger" onClick={deactivate}>Desactivar</button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                </div>              
               </>
             )}
 
-            {modal === "reactivate" && (
+            {modal === "reactivate" && selected && (
               <>
                 <h3>¿Reactivar categoría?</h3>
-                <button className="btn" onClick={reactivate}>Reactivar</button>
-                <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                <p>Volverá a estar disponible para selección</p>
+                <div className="modal-actions">
+                  <button className="btn" onClick={reactivate}>Reactivar</button>
+                  <button className="btn secondary" onClick={() => setModal(null)}>Cancelar</button>
+                </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {successModal && (
+        <div className="modal-backdrop">
+          <div className="modal success-modal">
+            <h3 className="success-title">✅ Operación Exitosa</h3>
+            <p>{successModal}</p>
+            <button className="btn" onClick={() => setSuccessModal(null)}>Aceptar</button>
+          </div>
+        </div>
+      )}
+      {/* ===== MODAL DE ERROR (Backend) ===== */}
+      {errorModal && (
+        <div className="modal-backdrop">
+          <div className="modal error-modal">
+            <h3 className="error-title">❌ Error en la Operación</h3>
+            <p>{errorModal}</p>
+            <button className="btn" onClick={closeErrorModal}>Aceptar</button>
           </div>
         </div>
       )}
     </>
   );
 }
-
