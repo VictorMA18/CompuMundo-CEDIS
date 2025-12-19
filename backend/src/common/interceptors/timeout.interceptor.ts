@@ -12,7 +12,7 @@ import { catchError, timeout } from 'rxjs/operators';
 export class TimeoutInterceptor<T = unknown> implements NestInterceptor<T, T> {
   intercept(context: ExecutionContext, next: CallHandler<T>): Observable<T> {
     return next.handle().pipe(
-      timeout(5000), // 5 segundos
+      timeout(60000), // 5 segundos
       catchError(err => {
         if (err instanceof TimeoutError) {
           return throwError(() => new RequestTimeoutException('La petición tardó demasiado tiempo'));
