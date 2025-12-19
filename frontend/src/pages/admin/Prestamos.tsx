@@ -52,26 +52,31 @@ export default function Prestamos() {
 
   const openNewModal = async () => {
     try {
-      // 2. Cargamos listas y hacemos DEBUG de lo que llega
-      const [lectoresData, materialesData] = await Promise.all([
-        prestamosService.getLectores(),
-        prestamosService.getMaterialesDisponibles()
-      ]);
+      setLoading(true);
 
-      console.log("Materiales Disponibles (Raw):", materialesData); // <--- MIRA ESTO EN LA CONSOLA F12
-      
+      const lectoresData = await prestamosService.getLectores();
       setLectores(lectoresData);
-      setMateriales(materialesData);
-      
-      // Reset form
+
+      try {
+        const materialesData = await prestamosService.getMaterialesDisponibles();
+        console.log("Materiales:", materialesData);
+        setMateriales(materialesData);
+      } catch (err) {
+        console.error("Error cargando materiales", err);
+        setMateriales([]);
+        setErrorMsg("No hay materiales disponibles actualmente.");
+      }
+
       setNewPrestamoLector('');
       setNewPrestamoMaterial('');
       setNewPrestamoObs('');
-      
       setModal('new');
+
     } catch (error) {
-      alert('Error cargando listas. Revisa la consola.');
-      console.error(error);
+      console.error("Error cargando lectores", error);
+      setErrorMsg("Error cargando lectores.");
+    } finally {
+      setLoading(false);
     }
   };
 
